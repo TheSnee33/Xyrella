@@ -1,6 +1,6 @@
 /**
  * Xyrella Cloud Functions (Firebase)
- * Project: dateiq-3f9b8
+ * Project: xyrella-5f994
  *
  * Callable functions:
  * 1. transcribeAudio - Speech-to-Text transcription
@@ -18,7 +18,7 @@ const fetch = require('node-fetch');
 admin.initializeApp();
 
 // Project constants
-const PROJECT_ID = 'dateiq-3f9b8';
+const PROJECT_ID = 'xyrella-5f994';
 
 // ============================================================================
 // FUNCTION 1: TRANSCRIBE AUDIO

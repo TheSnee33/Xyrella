@@ -13,8 +13,8 @@ const C = {
 const FONTS = { display: "'Playfair Display', serif", body: "'DM Sans', sans-serif" };
 
 // ─── FIREBASE CONFIG ──────────────────────────────────────────────────────────
-const keyStr = ["AIzaSyBHTz","Kpdh", "VCQMKdEq", "655fhhjyp5VjTl4gg"].join("");
-const FIREBASE_CONFIG = { projectId: "dateiq-3f9b8", apiKey: keyStr };
+const keyStr = "AIzaSyBiFXZXBlH-bYkGS1d_r1frzd2w3igcT8U";
+const FIREBASE_CONFIG = { projectId: "xyrella-5f994", apiKey: keyStr };
 
 // ─── FIREBASE AUTH HELPERS ────────────────────────────────────────────────────
 const authUrl = "https://identitytoolkit.googleapis.com/v1/accounts";
@@ -24,6 +24,10 @@ const signUpWithEmail = async (apiKey, email, password) => {
 };
 const signInWithEmail = async (apiKey, email, password) => {
   const res = await fetch(`${authUrl}:signInWithPassword?key=${apiKey}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password, returnSecureToken: true }) });
+  const data = await res.json(); if (data.error) throw new Error(data.error.message); return data;
+};
+const signInAnonymously = async (apiKey) => {
+  const res = await fetch(`${authUrl}:signUp?key=${apiKey}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ returnSecureToken: true }) });
   const data = await res.json(); if (data.error) throw new Error(data.error.message); return data;
 };
 const saveUserProfile = async (projectId, apiKey, uid, profile) => {
@@ -537,6 +541,20 @@ function XyrellaApp() {
     setAuthLoading(false);
   };
 
+  const handleAnonymousLogin = async () => {
+    setAuthError("");
+    if (!FIREBASE_CONFIG.apiKey) { setAuthError("Firebase API key not configured."); return; }
+    setAuthLoading(true);
+    try {
+      const r = await signInAnonymously(FIREBASE_CONFIG.apiKey);
+      setUser({ uid:r.localId, email:null, displayName:"Guest User", idToken:r.idToken });
+      setScreen("modeSelect");
+    } catch(e) {
+      setAuthError(e.message || "Failed to sign in anonymously.");
+    }
+    setAuthLoading(false);
+  };
+
   // Recording handlers
   const startRecording = () => {
     const SR = window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -652,11 +670,10 @@ function XyrellaApp() {
       <div key={i} style={{display:"flex",gap:14,marginBottom:12,background:C.card,borderRadius:14,padding:16,border:`1px solid ${C.border}`}}><div style={{fontSize:28}}>{f.icon}</div><div><div style={{fontWeight:700,fontSize:15}}>{f.title}</div><div style={{color:C.muted,fontSize:13,marginTop:2}}>{f.desc}</div></div></div>
     ))}
     <div style={{background:C.card,border:"1px solid rgba(34,197,94,.2)",borderRadius:14,padding:"14px 16px",marginBottom:20,textAlign:"center"}}>
-      <div style={{fontSize:13,color:C.green,fontWeight:600}}>Try 2 recordings free — no account needed</div>
-      <div style={{fontSize:12,color:C.muted,marginTop:4}}>Create an account anytime to save results and earn credits</div>
+      <div style={{fontSize:13,color:C.green,fontWeight:600}}>Create an account to start analyzing</div>
+      <div style={{fontSize:12,color:C.muted,marginTop:4}}>Sign up to save results and track your conversations</div>
     </div>
-    <button onClick={()=>setScreen("modeSelect")} style={{width:"100%",padding:16,background:`linear-gradient(135deg,${C.accent},#5B21B6)`,border:"none",borderRadius:16,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:FONTS.body,marginBottom:10}}>Get Started</button>
-    <button onClick={()=>setScreen("signup")} style={{width:"100%",padding:14,background:"none",border:`1px solid ${C.border}`,borderRadius:14,color:C.muted,fontSize:14,cursor:"pointer",fontFamily:FONTS.body}}>I already have an account</button>
+    <button onClick={()=>setScreen("signup")} style={{width:"100%",padding:16,background:`linear-gradient(135deg,${C.accent},#5B21B6)`,border:"none",borderRadius:16,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:FONTS.body,marginBottom:10}}>Get Started</button>
   </div>);
 
   // ── MODE SELECT ──
@@ -693,7 +710,6 @@ function XyrellaApp() {
   if (screen==="signup") return shell(<div>
     <div style={{textAlign:"center",marginBottom:20}}>
       <div style={{fontSize:48,marginBottom:8}}>🧠</div>
-      {!user&&trialCount>=MAX_TRIALS&&<div style={{background:C.card,border:`1px solid ${C.accent}40`,borderRadius:12,padding:"12px 16px",marginBottom:16}}><div style={{fontSize:14,fontWeight:700,color:C.accentSoft}}>You've used your 2 free trials!</div><div style={{fontSize:12,color:C.muted,marginTop:4}}>Create an account to continue using Xyrella.</div></div>}
       <div style={{fontFamily:FONTS.display,fontSize:26,fontWeight:700}}>{authMode==="signup"?"Create Your Account":"Welcome Back"}</div>
       <div style={{color:C.muted,fontSize:13,marginTop:6}}>{authMode==="signup"?"Get 5 free credits when you sign up":"Sign in to access your reports"}</div>
     </div>
@@ -714,7 +730,13 @@ function XyrellaApp() {
       <Input label="Password" type="password" placeholder="Your password" value={authPassword} onChange={e=>setAuthPassword(e.target.value)}/>
       <button onClick={handleSignin} disabled={authLoading} style={{width:"100%",padding:16,background:authLoading?C.dim:`linear-gradient(135deg,${C.accent},#5B21B6)`,border:"none",borderRadius:16,color:"#fff",fontSize:16,fontWeight:700,cursor:authLoading?"default":"pointer",fontFamily:FONTS.body,opacity:authLoading?.6:1}}>{authLoading?"Signing In...":"Sign In"}</button>
     </>}
-    {trialCount<MAX_TRIALS&&<button onClick={()=>setScreen("modeSelect")} style={{width:"100%",padding:12,marginTop:12,background:"none",border:`1px solid ${C.border}`,borderRadius:12,color:C.muted,fontSize:13,cursor:"pointer",fontFamily:FONTS.body}}>Skip — {MAX_TRIALS-trialCount} free trial{MAX_TRIALS-trialCount!==1?"s":""} left</button>}
+
+    <div style={{marginTop:24, textAlign:"center"}}>
+      <div style={{fontSize:11, color:C.muted, textTransform:"uppercase", letterSpacing:1, marginBottom:10}}>Testing / Quick Access</div>
+      <button onClick={handleAnonymousLogin} disabled={authLoading} style={{width:"100%",padding:14,background:"none",border:`1px solid ${C.border}`,borderRadius:14,color:C.text,fontSize:14,cursor:authLoading?"default":"pointer",fontFamily:FONTS.body,opacity:authLoading?.6:1}}>
+        {authLoading?"Authenticating...":"Anonymous Login (No Typing)"}
+      </button>
+    </div>
   </div>);
 
   // ── RECORDING ──

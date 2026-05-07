@@ -59,7 +59,7 @@ Xyrella-v1.5/
 |-------|-----------|
 | Frontend | Vanilla HTML/CSS/JS (index.html) + React JSX (xyrella-v1.4.jsx) |
 | AI Engine | Anthropic Claude API (claude-sonnet-4-20250514) |
-| Database | Google Firebase Firestore (project: dateiq-3f9b8) |
+| Database | Google Firebase Firestore (project: xyrella-5f994) |
 | Auth | Firebase Authentication |
 | Speech | Web Speech API (recognition + synthesis) |
 | Coaching | Web Audio API + SpeechSynthesis for Bluetooth routing |
@@ -162,7 +162,7 @@ Xyrella can connect to your Bluetooth headset and whisper real-time suggestions 
 
 ## Firebase Setup
 
-1. Project ID: `dateiq-3f9b8` (or new `xyrella` project)
+1. Project ID: `xyrella-5f994`
 2. Enable Firestore in the Firebase Console
 3. Deploy security rules from `firebase-schema.js`
 4. Create required composite indexes (documented in schema file)

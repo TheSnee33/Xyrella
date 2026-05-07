@@ -1,7 +1,7 @@
 /**
  * Xyrella v1.5 Firebase Schema
  * Database structure for Xyrella (DateIQ + BusinessIQ)
- * Project: dateiq-3f9b8
+ * Project: xyrella-5f994
  *
  * Key Features:
  * - Isolated contact profiles with separate sessions and data
@@ -725,7 +725,7 @@ export async function uploadAudio(storage, userId, contactId, sessionId, audioBl
 
   return {
     audioRef: audioPath,
-    audioUrl: `https://firebasestorage.googleapis.com/v0/b/dateiq-3f9b8.appspot.com/o/${encodeURIComponent(audioPath)}?alt=media&token=${token}`
+    audioUrl: `https://firebasestorage.googleapis.com/v0/b/xyrella-5f994.firebasestorage.app/o/${encodeURIComponent(audioPath)}?alt=media&token=${token}`
   };
 }
 
@@ -778,7 +778,7 @@ export async function uploadVoiceSample(db, storage, userId, contactId, sampleId
     sessionId,
     label,
     audioRef: audioPath,
-    audioUrl: `https://firebasestorage.googleapis.com/v0/b/dateiq-3f9b8.appspot.com/o/${encodeURIComponent(audioPath)}?alt=media`,
+    audioUrl: `https://firebasestorage.googleapis.com/v0/b/xyrella-5f994.firebasestorage.app/o/${encodeURIComponent(audioPath)}?alt=media`,
     duration,
     format,
     sizeBytes: audioBlob.size || 0,
