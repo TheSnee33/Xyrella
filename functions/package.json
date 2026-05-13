@@ -3,7 +3,7 @@
   "description": "Xyrella Cloud Functions - AI analysis middleware for xyrella-5f994",
   "version": "1.5.0",
   "engines": {
-    "node": "18"
+    "node": "20"
   },
   "main": "index.js",
   "scripts": {
