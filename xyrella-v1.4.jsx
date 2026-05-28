@@ -13,7 +13,7 @@ const C = {
 const FONTS = { display: "'Playfair Display', serif", body: "'DM Sans', sans-serif" };
 
 // ─── FIREBASE CONFIG ──────────────────────────────────────────────────────────
-const keyStr = "AIzaSyBiFXZXBlH-bYkGS1d_r1frzd2w3igcT8U";
+const keyStr = "AIzaSyBiFXZX8lH-bYkGS1d_r1frzd2w3igcT8U";
 const FIREBASE_CONFIG = { projectId: "xyrella-5f994", apiKey: keyStr };
 
 // ─── FIREBASE AUTH HELPERS ────────────────────────────────────────────────────
@@ -194,70 +194,34 @@ const saveToFirebase = async (projectId, apiKey, userId, data) => {
 };
 
 // ─── AI ANALYSIS ──────────────────────────────────────────────────────────────
-const analyzeTranscript = async (transcript, context, mode) => {
-  const traits = getTraitDefs(mode);
-  const cats = getCategories(mode);
-  const catKeys = getCatKeys(mode);
-  const modeLabel = mode === "business" ? "BusinessIQ" : "DateIQ";
-
-  const traitList = traits.map(t => {
-    let n = "";
-    const cat = t.category;
-    if (cat==="negative"||cat==="risk") n = "0=none, 100=extreme. Lower is better.";
-    if (cat==="positive"||cat==="buyer") n = "0=none, 100=extreme. Higher is better.";
-    if (cat==="polar") n = `0=${t.worstLabel}, 100=${t.idealLabel}. Higher is better.`;
-    if (cat==="balance") n = `0=${t.lowLabel}, 50=${t.midLabel}(ideal 26-75), 100=${t.highLabel}. Middle is best.`;
-    return `{"key":"${t.key}","label":"${t.label}","category":"${t.category}","score":<0-100>,"notes":"<evidence>"}  // ${n}`;
-  }).join("\n    ");
-
-  const interestInstructions = mode === "business"
-    ? `Also extract what the prospect is interested in or mentions about products, services, competitors, requirements, budget constraints, timelines, and any personal details shared. Note specific product names, models, brands, features they like or dislike.`
-    : `Also extract what this person is interested in or mentions: hobbies, foods, places, activities, pets, music, movies, travel destinations, things they love, things they dislike. Note specific names and details.`;
-
-  const prompt = `You are ${modeLabel}, an advanced AI ${mode==="business"?"sales intelligence":"personality"} analyst. Analyze this ${context} transcript and score the ${mode==="business"?"PROSPECT/CLIENT":"PRIMARY SPEAKER"} on exactly 37 traits.
-
-RULES:
-- Score 0-100 integers only based on transcript evidence
-${catKeys.map(k => {
-  const c = cats[k];
-  if (k==="negative"||k==="risk") return `- ${c.label.toUpperCase()}: 0=none, 100=extreme. Lower better.`;
-  if (k==="positive"||k==="buyer") return `- ${c.label.toUpperCase()}: 0=none, 100=extreme. Higher better.`;
-  if (k==="polar") return `- ${c.label.toUpperCase()}: 0=worst, 100=ideal. Higher better. No healthy middle.`;
-  if (k==="balance") return `- ${c.label.toUpperCase()}: 0=extreme low, 50=ideal, 100=extreme high. 26-75 green zone.`;
-  return "";
-}).join("\n")}
-- Provide 2-3 sentence evidence notes per trait
-- If insufficient data, score 50 and note it
-
-${interestInstructions}
-
-TRANSCRIPT:
-"${transcript}"
-
-Return ONLY valid JSON:
-{
-  "overallScore": <0-100>,
-  "summary": "<2-3 sentences>",
-  "traits": [
-    ${traitList}
-  ],
-  "interests": {
-    "likes": ["<thing they expressed interest in>", ...],
-    "dislikes": ["<thing they expressed dislike toward>", ...],
-    "mentions": ["<notable specific mention: brand, place, person, product>", ...],
-    "keyInsights": ["<actionable insight for the user>", ...]
-  }${mode==="business" ? `,
-  "dealStage": "<prospecting|qualifying|proposal|closing>",
-  "nextSteps": ["<suggested follow-up action>", ...],
-  "objections": ["<key objection raised>", ...]` : ""}
-}`;
-
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method:"POST", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:5000, messages:[{role:"user",content:prompt}] }),
+const analyzeTranscript = async (transcript, context, mode, idToken) => {
+  if (!idToken) {
+    throw new Error("User session is not authenticated. Please log in first.");
+  }
+  const traitDefs = getTraitDefs(mode);
+  const response = await fetch("https://us-central1-xyrella-5f994.cloudfunctions.net/analyzeWithClaude", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${idToken}`
+    },
+    body: JSON.stringify({
+      data: {
+        transcript,
+        mode,
+        traitDefinitions: traitDefs
+      }
+    })
   });
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Cloud Function failed: ${errText || response.statusText}`);
+  }
   const d = await response.json();
-  return JSON.parse((d.content?.[0]?.text||"").replace(/```json|```/g,"").trim());
+  if (d.error) {
+    throw new Error(d.error.message || "Failed to analyze conversation.");
+  }
+  return d.result;
 };
 
 // ─── BLUETOOTH COACHING ENGINE ────────────────────────────────────────────────
@@ -593,7 +557,7 @@ function XyrellaApp() {
     const mLabel = getModeLabel(mode);
     const si = setInterval(()=>{ step++; setProcessStep(step); if(step>=5) clearInterval(si); },1500);
     try {
-      const result = await analyzeTranscript(ft, context, mode);
+      const result = await analyzeTranscript(ft, context, mode, user?.idToken);
       const traitDefs = getTraitDefs(mode);
       const traits = result.traits.map(t => { const d=traitDefs.find(x=>x.key===t.key); return {...t,...d, scoreColor:getScoreColor(t.score,t.category||d?.category), scoreLabel:getScoreZoneLabel(t.score,t.category||d?.category)}; });
       const rd = {...result, traits, transcript:ft, context, subjectName, mode, date:new Date().toISOString().split("T")[0], duration:formatTime(recordingTime)};
