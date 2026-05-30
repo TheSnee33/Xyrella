@@ -180,7 +180,7 @@ const getScoreZoneLabel = (s, cat) => {
 };
 
 // ─── FIREBASE SAVE ────────────────────────────────────────────────────────────
-const saveToFirebase = async (projectId, apiKey, userId, data, idToken) => {
+const saveToFirebase = async (projectId, apiKey, userId, data, idToken, userName, userEmail) => {
   const base = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
   try {
     const fields = {
@@ -189,6 +189,7 @@ const saveToFirebase = async (projectId, apiKey, userId, data, idToken) => {
       duration:{stringValue:data.duration}, transcript:{stringValue:data.transcript},
       overallScore:{doubleValue:data.overallScore}, summary:{stringValue:data.summary||""},
       traitCount:{integerValue:37}, modelVersion:{stringValue:"claude-sonnet-4-20250514"}, userId:{stringValue:userId},
+      userName:{stringValue:userName||"Guest User"}, userEmail:{stringValue:userEmail||"Anonymous"},
     };
     const sRes = await fetch(`${base}/users/${userId}/sessions?key=${apiKey}`, {
       method:"POST",
@@ -593,7 +594,7 @@ function XyrellaApp() {
       const traits = result.traits.map(t => { const d=traitDefs.find(x=>x.key===t.key); return {...t,...d, scoreColor:getScoreColor(t.score,t.category||d?.category), scoreLabel:getScoreZoneLabel(t.score,t.category||d?.category)}; });
       const rd = {...result, traits, transcript:ft, context, subjectName, mode, date:new Date().toISOString().split("T")[0], duration:formatTime(recordingTime)};
       setReport(rd);
-      if (user&&FIREBASE_CONFIG.apiKey) { const sid=await saveToFirebase(FIREBASE_CONFIG.projectId,FIREBASE_CONFIG.apiKey,user.uid,rd,user.idToken); if(sid) setSavedToFirebase(true); }
+      if (user&&FIREBASE_CONFIG.apiKey) { const sid=await saveToFirebase(FIREBASE_CONFIG.projectId,FIREBASE_CONFIG.apiKey,user.uid,rd,user.idToken,user.displayName,user.email||"Anonymous"); if(sid) setSavedToFirebase(true); }
       clearInterval(si); setScreen("report"); setReportTab("traits");
     } catch(e) { clearInterval(si); alert("Analysis error: "+e.message); setScreen("recording"); }
   };
