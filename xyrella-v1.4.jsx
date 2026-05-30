@@ -542,6 +542,7 @@ function XyrellaApp() {
     try {
       const r = await signInAnonymously(FIREBASE_CONFIG.apiKey);
       setUser({ uid:r.localId, email:null, displayName:"Guest User", idToken:r.idToken });
+      await saveUserProfile(FIREBASE_CONFIG.projectId, FIREBASE_CONFIG.apiKey, r.localId, { displayName:"Guest User", email:"", phoneNumber:"", igHandle:"", trialRecordings:trialCount }, r.idToken);
       setScreen("modeSelect");
     } catch(e) {
       setAuthError(e.message || "Failed to sign in anonymously.");
