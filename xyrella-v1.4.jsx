@@ -30,9 +30,13 @@ const signInAnonymously = async (apiKey) => {
   const res = await fetch(`${authUrl}:signUp?key=${apiKey}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ returnSecureToken: true }) });
   const data = await res.json(); if (data.error) throw new Error(data.error.message); return data;
 };
-const saveUserProfile = async (projectId, apiKey, uid, profile) => {
+const saveUserProfile = async (projectId, apiKey, uid, profile, idToken) => {
   await fetch(`https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${uid}?key=${apiKey}`, {
-    method: "PATCH", headers: { "Content-Type": "application/json" },
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${idToken}`
+    },
     body: JSON.stringify({ fields: { uid: { stringValue: uid }, displayName: { stringValue: profile.displayName || "" }, email: { stringValue: profile.email || "" }, igHandle: { stringValue: profile.igHandle || "" }, createdAt: { stringValue: new Date().toISOString() }, credits: { mapValue: { fields: { balance: { integerValue: 5 }, totalPurchased: { integerValue: 0 }, totalEarned: { integerValue: 0 }, totalSpent: { integerValue: 0 } } } }, trialRecordings: { integerValue: profile.trialRecordings || 0 }, disclaimerAccepted: { booleanValue: true } } }),
   });
 };
@@ -168,7 +172,7 @@ const getScoreZoneLabel = (s, cat) => {
 };
 
 // ─── FIREBASE SAVE ────────────────────────────────────────────────────────────
-const saveToFirebase = async (projectId, apiKey, userId, data) => {
+const saveToFirebase = async (projectId, apiKey, userId, data, idToken) => {
   const base = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
   try {
     const fields = {
@@ -179,13 +183,22 @@ const saveToFirebase = async (projectId, apiKey, userId, data) => {
       traitCount:{integerValue:37}, modelVersion:{stringValue:"claude-sonnet-4-20250514"}, userId:{stringValue:userId},
     };
     const sRes = await fetch(`${base}/users/${userId}/sessions?key=${apiKey}`, {
-      method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ fields }),
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "Authorization": `Bearer ${idToken}`
+      },
+      body: JSON.stringify({ fields }),
     });
     const session = await sRes.json();
     const sId = session.name?.split("/").pop();
     for (const t of data.traits) {
       await fetch(`${base}/users/${userId}/sessions/${sId}/traitScores/${t.key}?key=${apiKey}`, {
-        method:"PATCH", headers:{"Content-Type":"application/json"},
+        method:"PATCH",
+        headers:{
+          "Content-Type":"application/json",
+          "Authorization": `Bearer ${idToken}`
+        },
         body: JSON.stringify({ fields: { traitKey:{stringValue:t.key}, label:{stringValue:t.label}, category:{stringValue:t.category}, score:{doubleValue:t.score}, maxScore:{integerValue:100}, notes:{stringValue:t.notes||""} } }),
       });
     }
@@ -477,7 +490,7 @@ function XyrellaApp() {
     try {
       const r = await signUpWithEmail(FIREBASE_CONFIG.apiKey, authEmail, authPassword);
       setUser({ uid:r.localId, email:r.email, displayName:authName, idToken:r.idToken });
-      await saveUserProfile(FIREBASE_CONFIG.projectId, FIREBASE_CONFIG.apiKey, r.localId, { displayName:authName, email:r.email, igHandle:authIG, trialRecordings:trialCount });
+      await saveUserProfile(FIREBASE_CONFIG.projectId, FIREBASE_CONFIG.apiKey, r.localId, { displayName:authName, email:r.email, igHandle:authIG, trialRecordings:trialCount }, r.idToken);
       setScreen("modeSelect");
     } catch(e) {
       const m = e.message||"";
@@ -563,7 +576,7 @@ function XyrellaApp() {
       const traits = result.traits.map(t => { const d=traitDefs.find(x=>x.key===t.key); return {...t,...d, scoreColor:getScoreColor(t.score,t.category||d?.category), scoreLabel:getScoreZoneLabel(t.score,t.category||d?.category)}; });
       const rd = {...result, traits, transcript:ft, context, subjectName, mode, date:new Date().toISOString().split("T")[0], duration:formatTime(recordingTime)};
       setReport(rd);
-      if (user&&FIREBASE_CONFIG.apiKey) { const sid=await saveToFirebase(FIREBASE_CONFIG.projectId,FIREBASE_CONFIG.apiKey,user.uid,rd); if(sid) setSavedToFirebase(true); }
+      if (user&&FIREBASE_CONFIG.apiKey) { const sid=await saveToFirebase(FIREBASE_CONFIG.projectId,FIREBASE_CONFIG.apiKey,user.uid,rd,user.idToken); if(sid) setSavedToFirebase(true); }
       clearInterval(si); setScreen("report"); setReportTab("traits");
     } catch(e) { clearInterval(si); alert("Analysis error: "+e.message); setScreen("recording"); }
   };
