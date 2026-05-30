@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+.npm
+
+# Build outputs
+dist/
+build/
+.next/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Firebase
+.firebase/
+firebase-debug.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# API Keys (never commit)
+**/apiKey.js
+**/secrets.js

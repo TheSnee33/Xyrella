@@ -203,7 +203,8 @@ const analyzeTranscript = async (transcript, context, mode, idToken) => {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${idToken}`
+      "Authorization": `Bearer ${idToken}`,
+      "x-firebase-auth-token": idToken
     },
     body: JSON.stringify({
       data: {

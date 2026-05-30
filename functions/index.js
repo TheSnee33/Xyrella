@@ -17,8 +17,65 @@ const fetch = require('node-fetch');
 
 admin.initializeApp();
 
-// Project constants
+// Project constants (Updated: 2026-05-30)
 const PROJECT_ID = 'xyrella-5f994';
+
+// Helper to verify auth token from context or headers (supports custom REST fetch requests)
+const getAuthUser = async (data, context) => {
+  console.log("DEBUG getAuthUser START - env keys:", Object.keys(process.env));
+  console.log("DEBUG getAuthUser START - input parameters:", {
+    hasData: !!data,
+    dataType: typeof data,
+    hasContext: !!context,
+    contextType: typeof context,
+    contextHasAuth: context ? !!context.auth : false,
+    dataHasAuth: data ? !!data.auth : false
+  });
+
+  if (context && context.auth) {
+    console.log("DEBUG getAuthUser - returning context.auth", JSON.stringify(context.auth));
+    return context.auth;
+  }
+  if (data && data.auth) {
+    console.log("DEBUG getAuthUser - returning data.auth", JSON.stringify(data.auth));
+    return data.auth;
+  }
+  
+  const req1 = context && context.rawRequest ? context.rawRequest : null;
+  const req2 = data && data.rawRequest ? data.rawRequest : null;
+  const req = req1 || req2;
+  
+  if (!req) {
+    console.log("DEBUG getAuthUser - rawRequest is not found in context or data");
+    console.log("DEBUG getAuthUser keys - dataKeys:", data ? Object.keys(data) : [], "contextKeys:", context ? Object.keys(context) : []);
+  }
+
+  const headers = req && req.headers ? req.headers : {};
+  console.log("DEBUG getAuthUser - rawRequest headers keys:", Object.keys(headers));
+  
+  let idToken = headers['x-firebase-auth-token'] || headers['x-firebase-id-token'];
+  console.log("DEBUG getAuthUser - extracted x-firebase-auth-token:", idToken ? "FOUND (length " + idToken.length + ")" : "MISSING");
+  
+  if (!idToken && headers.authorization) {
+    console.log("DEBUG getAuthUser - checking authorization header:", headers.authorization.substring(0, 20) + "...");
+    if (headers.authorization.startsWith('Bearer ')) {
+      idToken = headers.authorization.split('Bearer ')[1];
+    }
+  }
+  
+  if (idToken) {
+    try {
+      const decodedToken = await admin.auth().verifyIdToken(idToken);
+      console.log("DEBUG getAuthUser - verified token, uid:", decodedToken.uid);
+      return { uid: decodedToken.uid, token: decodedToken };
+    } catch (e) {
+      console.error("DEBUG getAuthUser - Manual token verification failed:", e.message);
+    }
+  } else {
+    console.log("DEBUG getAuthUser - No token found to verify");
+  }
+  return null;
+};
 
 // ============================================================================
 // FUNCTION 1: TRANSCRIBE AUDIO
@@ -150,7 +207,7 @@ exports.analyzeWithGemini = functions.https.onCall(async (data, context) => {
   }
 
   try {
-    const geminiKey = functions.config().gemini?.key;
+    const geminiKey = process.env.GEMINI_API_KEY;
     if (!geminiKey) {
       throw new Error('Gemini API key not configured');
     }
@@ -279,18 +336,20 @@ Respond in this JSON format only:
  * Gracefully handles missing API key
  */
 exports.analyzeWithClaude = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
+  const authUser = await getAuthUser(data, context);
+  if (!authUser) {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
   }
 
-  const { transcript, mode = 'date', traitDefinitions = [] } = data;
+  const payload = data && data.data ? data.data : data;
+  const { transcript, mode = 'date', traitDefinitions = [] } = payload;
 
   if (!transcript) {
     throw new functions.https.HttpsError('invalid-argument', 'transcript is required');
   }
 
   try {
-    const claudeKey = functions.config().anthropic?.key;
+    const claudeKey = process.env.ANTHROPIC_API_KEY;
 
     // Gracefully handle missing API key
     if (!claudeKey) {
@@ -727,7 +786,7 @@ exports.analyzeVoicePsychology = functions.https.onCall(async (data, context) =>
   }
 
   try {
-    const geminiKey = functions.config().gemini?.key;
+    const geminiKey = process.env.GEMINI_API_KEY;
     if (!geminiKey) {
       throw new Error('Gemini API key not configured');
     }
