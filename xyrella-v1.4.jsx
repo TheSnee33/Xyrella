@@ -38,6 +38,25 @@ const sendVerificationEmail = async (apiKey, idToken) => {
   });
   const data = await res.json(); if (data.error) throw new Error(data.error.message); return data;
 };
+const fetchUserProfile = async (projectId, apiKey, uid, idToken) => {
+  try {
+    const res = await fetch(`https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${uid}?key=${apiKey}`, {
+      method: "GET",
+      headers: { "Authorization": `Bearer ${idToken}` }
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return {
+      displayName: data.fields?.displayName?.stringValue || "",
+      email: data.fields?.email?.stringValue || "",
+      phoneNumber: data.fields?.phoneNumber?.stringValue || "",
+      igHandle: data.fields?.igHandle?.stringValue || ""
+    };
+  } catch (e) {
+    console.error("fetchUserProfile error:", e);
+    return null;
+  }
+};
 const saveUserProfile = async (projectId, apiKey, uid, profile, idToken) => {
   await fetch(`https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${uid}?key=${apiKey}`, {
     method: "PATCH",
@@ -45,7 +64,7 @@ const saveUserProfile = async (projectId, apiKey, uid, profile, idToken) => {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${idToken}`
     },
-    body: JSON.stringify({ fields: { uid: { stringValue: uid }, displayName: { stringValue: profile.displayName || "" }, email: { stringValue: profile.email || "" }, phoneNumber: { stringValue: profile.phoneNumber || "" }, igHandle: { stringValue: profile.igHandle || "" }, createdAt: { stringValue: new Date().toISOString() }, credits: { mapValue: { fields: { balance: { integerValue: 5 }, totalPurchased: { integerValue: 0 }, totalEarned: { integerValue: 0 }, totalSpent: { integerValue: 0 } } } }, trialRecordings: { integerValue: profile.trialRecordings || 0 }, disclaimerAccepted: { booleanValue: true } } }),
+    body: JSON.stringify({ fields: { uid: { stringValue: uid }, displayName: { stringValue: profile.displayName || "" }, email: { stringValue: profile.email || "" }, phoneNumber: { stringValue: profile.phoneNumber || "" }, igHandle: { stringValue: profile.igHandle || "" }, createdAt: { stringValue: new Date().toISOString() }, credits: { mapValue: { fields: { balance: { integerValue: "5" }, totalPurchased: { integerValue: "0" }, totalEarned: { integerValue: "0" }, totalSpent: { integerValue: "0" } } } }, trialRecordings: { integerValue: String(profile.trialRecordings || 0) }, disclaimerAccepted: { booleanValue: true } } }),
   });
 };
 
@@ -188,7 +207,7 @@ const saveToFirebase = async (projectId, apiKey, userId, data, idToken, userName
       context:{stringValue:data.context}, date:{stringValue:data.date},
       duration:{stringValue:data.duration}, transcript:{stringValue:data.transcript},
       overallScore:{doubleValue:data.overallScore}, summary:{stringValue:data.summary||""},
-      traitCount:{integerValue:37}, modelVersion:{stringValue:"claude-sonnet-4-20250514"}, userId:{stringValue:userId},
+      traitCount:{integerValue:"37"}, modelVersion:{stringValue:"claude-sonnet-4-20250514"}, userId:{stringValue:userId},
       userName:{stringValue:userName||"Guest User"}, userEmail:{stringValue:userEmail||"Anonymous"},
     };
     const sRes = await fetch(`${base}/users/${userId}/sessions?key=${apiKey}`, {
@@ -208,7 +227,7 @@ const saveToFirebase = async (projectId, apiKey, userId, data, idToken, userName
           "Content-Type":"application/json",
           "Authorization": `Bearer ${idToken}`
         },
-        body: JSON.stringify({ fields: { traitKey:{stringValue:t.key}, label:{stringValue:t.label}, category:{stringValue:t.category}, score:{doubleValue:t.score}, maxScore:{integerValue:100}, notes:{stringValue:t.notes||""} } }),
+        body: JSON.stringify({ fields: { traitKey:{stringValue:t.key}, label:{stringValue:t.label}, category:{stringValue:t.category}, score:{doubleValue:t.score}, maxScore:{integerValue:"100"}, notes:{stringValue:t.notes||""} } }),
       });
     }
     return sId;
@@ -500,8 +519,15 @@ function XyrellaApp() {
     setAuthLoading(true);
     try {
       const r = await signUpWithEmail(FIREBASE_CONFIG.apiKey, authEmail, authPassword);
-      setUser({ uid:r.localId, email:r.email, displayName:authName, idToken:r.idToken });
-      await saveUserProfile(FIREBASE_CONFIG.projectId, FIREBASE_CONFIG.apiKey, r.localId, { displayName:authName, email:r.email, phoneNumber:authPhone, igHandle:authIG, trialRecordings:trialCount }, r.idToken);
+      setUser({
+        uid: r.localId,
+        email: r.email || authEmail,
+        displayName: authName,
+        idToken: r.idToken,
+        phoneNumber: authPhone,
+        igHandle: authIG
+      });
+      await saveUserProfile(FIREBASE_CONFIG.projectId, FIREBASE_CONFIG.apiKey, r.localId, { displayName:authName, email:r.email || authEmail, phoneNumber:authPhone, igHandle:authIG, trialRecordings:trialCount }, r.idToken);
       try {
         await sendVerificationEmail(FIREBASE_CONFIG.apiKey, r.idToken);
       } catch (err) {
@@ -525,7 +551,20 @@ function XyrellaApp() {
     setAuthLoading(true);
     try {
       const r = await signInWithEmail(FIREBASE_CONFIG.apiKey, authEmail, authPassword);
-      setUser({ uid:r.localId, email:r.email, displayName:r.displayName||authEmail.split("@")[0], idToken:r.idToken });
+      let profile = null;
+      try {
+        profile = await fetchUserProfile(FIREBASE_CONFIG.projectId, FIREBASE_CONFIG.apiKey, r.localId, r.idToken);
+      } catch (err) {
+        console.error("Error fetching user profile:", err);
+      }
+      setUser({
+        uid: r.localId,
+        email: r.email || profile?.email || authEmail,
+        displayName: profile?.displayName || r.displayName || authEmail.split("@")[0],
+        idToken: r.idToken,
+        phoneNumber: profile?.phoneNumber || "",
+        igHandle: profile?.igHandle || ""
+      });
       setScreen("modeSelect");
     } catch(e) {
       const m = e.message||"";
