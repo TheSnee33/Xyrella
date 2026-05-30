@@ -5,6 +5,16 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
 
+      // Direct Sessions collection (used by frontend)
+      match /sessions/{sessionId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+
+        // Trait scores collection under each session
+        match /traitScores/{traitKey} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+      }
+
       // Contacts collection
       match /contacts/{contactId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
