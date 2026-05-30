@@ -30,6 +30,14 @@ const signInAnonymously = async (apiKey) => {
   const res = await fetch(`${authUrl}:signUp?key=${apiKey}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ returnSecureToken: true }) });
   const data = await res.json(); if (data.error) throw new Error(data.error.message); return data;
 };
+const sendVerificationEmail = async (apiKey, idToken) => {
+  const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ requestType: "VERIFY_EMAIL", idToken })
+  });
+  const data = await res.json(); if (data.error) throw new Error(data.error.message); return data;
+};
 const saveUserProfile = async (projectId, apiKey, uid, profile, idToken) => {
   await fetch(`https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${uid}?key=${apiKey}`, {
     method: "PATCH",
@@ -37,7 +45,7 @@ const saveUserProfile = async (projectId, apiKey, uid, profile, idToken) => {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${idToken}`
     },
-    body: JSON.stringify({ fields: { uid: { stringValue: uid }, displayName: { stringValue: profile.displayName || "" }, email: { stringValue: profile.email || "" }, igHandle: { stringValue: profile.igHandle || "" }, createdAt: { stringValue: new Date().toISOString() }, credits: { mapValue: { fields: { balance: { integerValue: 5 }, totalPurchased: { integerValue: 0 }, totalEarned: { integerValue: 0 }, totalSpent: { integerValue: 0 } } } }, trialRecordings: { integerValue: profile.trialRecordings || 0 }, disclaimerAccepted: { booleanValue: true } } }),
+    body: JSON.stringify({ fields: { uid: { stringValue: uid }, displayName: { stringValue: profile.displayName || "" }, email: { stringValue: profile.email || "" }, phoneNumber: { stringValue: profile.phoneNumber || "" }, igHandle: { stringValue: profile.igHandle || "" }, createdAt: { stringValue: new Date().toISOString() }, credits: { mapValue: { fields: { balance: { integerValue: 5 }, totalPurchased: { integerValue: 0 }, totalEarned: { integerValue: 0 }, totalSpent: { integerValue: 0 } } } }, trialRecordings: { integerValue: profile.trialRecordings || 0 }, disclaimerAccepted: { booleanValue: true } } }),
   });
 };
 
@@ -449,6 +457,7 @@ function XyrellaApp() {
   const [authPassword, setAuthPassword] = useState("");
   const [authConfirm, setAuthConfirm] = useState("");
   const [authIG, setAuthIG] = useState("");
+  const [authPhone, setAuthPhone] = useState("");
   const [authError, setAuthError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
 
@@ -483,6 +492,7 @@ function XyrellaApp() {
     setAuthError("");
     if (!authName.trim()) { setAuthError("Please enter your name."); return; }
     if (!authEmail.trim()) { setAuthError("Please enter your email."); return; }
+    if (!authPhone.trim()) { setAuthError("Please enter your phone number."); return; }
     if (authPassword.length<6) { setAuthError("Password must be at least 6 characters."); return; }
     if (authPassword!==authConfirm) { setAuthError("Passwords do not match."); return; }
     if (!FIREBASE_CONFIG.apiKey) { setAuthError("Firebase API key not configured."); return; }
@@ -490,7 +500,13 @@ function XyrellaApp() {
     try {
       const r = await signUpWithEmail(FIREBASE_CONFIG.apiKey, authEmail, authPassword);
       setUser({ uid:r.localId, email:r.email, displayName:authName, idToken:r.idToken });
-      await saveUserProfile(FIREBASE_CONFIG.projectId, FIREBASE_CONFIG.apiKey, r.localId, { displayName:authName, email:r.email, igHandle:authIG, trialRecordings:trialCount }, r.idToken);
+      await saveUserProfile(FIREBASE_CONFIG.projectId, FIREBASE_CONFIG.apiKey, r.localId, { displayName:authName, email:r.email, phoneNumber:authPhone, igHandle:authIG, trialRecordings:trialCount }, r.idToken);
+      try {
+        await sendVerificationEmail(FIREBASE_CONFIG.apiKey, r.idToken);
+      } catch (err) {
+        console.error("Failed to send verification email:", err);
+      }
+      alert("Account created successfully! A verification email has been sent to " + authEmail + ". Please verify your account.");
       setScreen("modeSelect");
     } catch(e) {
       const m = e.message||"";
@@ -698,6 +714,7 @@ function XyrellaApp() {
     {authMode==="signup"&&<>
       <Input label="Full Name" placeholder="Your name" value={authName} onChange={e=>setAuthName(e.target.value)}/>
       <Input label="Email" type="email" placeholder="you@email.com" value={authEmail} onChange={e=>setAuthEmail(e.target.value)}/>
+      <Input label="Phone Number" placeholder="+11234567890" value={authPhone} onChange={e=>setAuthPhone(e.target.value)}/>
       <Input label="Password" type="password" placeholder="At least 6 characters" value={authPassword} onChange={e=>setAuthPassword(e.target.value)}/>
       <Input label="Confirm Password" type="password" placeholder="Re-enter password" value={authConfirm} onChange={e=>setAuthConfirm(e.target.value)}/>
       <Input label="Instagram Handle (optional)" placeholder="@yourhandle" value={authIG} onChange={e=>setAuthIG(e.target.value)}/>
