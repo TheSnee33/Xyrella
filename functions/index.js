@@ -233,8 +233,8 @@ ${traitsText}
 
 For EACH trait, provide:
 1. A score (0-100)
-2. A 1-2 sentence evidence note
-3. Relevant quote(s) if applicable
+2. A very brief, 1-sentence evidence note (maximum 15 words) explaining the score
+3. Relevant quote (only if highly critical and short, otherwise null)
 
 Also extract:
 - Overall quality score (0-100)
@@ -279,7 +279,7 @@ Respond in this JSON format only:
         temperature: 0.3,
         topP: 0.8,
         topK: 40,
-        maxOutputTokens: 2048
+        maxOutputTokens: 4096
       }
     };
 
@@ -380,8 +380,8 @@ ${traitsText}
 
 For EACH trait, provide:
 1. A score (0-100)
-2. A 1-2 sentence evidence note
-3. Relevant quote(s) if applicable
+2. A very brief, 1-sentence evidence note (maximum 15 words) explaining the score
+3. Relevant quote (only if highly critical and short, otherwise null)
 
 Also extract:
 - Overall quality score (0-100)
@@ -414,7 +414,7 @@ Respond in this JSON format only:
 
     const claudePayload = {
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 2048,
+      max_tokens: 4096,
       temperature: 0.3,
       messages: [
         {
