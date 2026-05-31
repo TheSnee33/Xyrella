@@ -57,6 +57,60 @@ const fetchUserProfile = async (projectId, apiKey, uid, idToken) => {
     return null;
   }
 };
+const fetchUserSessions = async (projectId, apiKey, userId, idToken) => {
+  try {
+    const res = await fetch(`https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${userId}/sessions?key=${apiKey}`, {
+      method: "GET",
+      headers: { "Authorization": `Bearer ${idToken}` }
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!data.documents) return [];
+    return data.documents.map(doc => {
+      const fields = doc.fields;
+      const sId = doc.name.split("/").pop();
+      return {
+        id: sId,
+        mode: fields.mode?.stringValue || "date",
+        subjectName: fields.subjectName?.stringValue || "Unknown",
+        context: fields.context?.stringValue || "",
+        date: fields.date?.stringValue || "",
+        duration: fields.duration?.stringValue || "",
+        transcript: fields.transcript?.stringValue || "",
+        overallScore: Number(fields.overallScore?.doubleValue || fields.overallScore?.integerValue || 0),
+        summary: fields.summary?.stringValue || "",
+        userId: fields.userId?.stringValue || ""
+      };
+    });
+  } catch (e) {
+    console.error("fetchUserSessions error:", e);
+    return [];
+  }
+};
+const fetchSessionTraits = async (projectId, apiKey, userId, sessionId, idToken) => {
+  try {
+    const res = await fetch(`https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${userId}/sessions/${sessionId}/traitScores?key=${apiKey}`, {
+      method: "GET",
+      headers: { "Authorization": `Bearer ${idToken}` }
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!data.documents) return [];
+    return data.documents.map(doc => {
+      const fields = doc.fields;
+      return {
+        key: fields.traitKey?.stringValue || "",
+        label: fields.label?.stringValue || "",
+        category: fields.category?.stringValue || "",
+        score: Number(fields.score?.doubleValue || fields.score?.integerValue || 0),
+        notes: fields.notes?.stringValue || ""
+      };
+    });
+  } catch (e) {
+    console.error("fetchSessionTraits error:", e);
+    return [];
+  }
+};
 const saveUserProfile = async (projectId, apiKey, uid, profile, idToken) => {
   await fetch(`https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${uid}?key=${apiKey}`, {
     method: "PATCH",
@@ -469,6 +523,56 @@ function XyrellaApp() {
   const [expandedTrait, setExpandedTrait] = useState(null);
   const [openCategories, setOpenCategories] = useState({});
   const [savedToFirebase, setSavedToFirebase] = useState(false);
+  const [userSessions, setUserSessions] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  const refreshUserSessions = async (userId, idToken) => {
+    if (!userId || !idToken) return;
+    try {
+      const list = await fetchUserSessions(FIREBASE_CONFIG.projectId, FIREBASE_CONFIG.apiKey, userId, idToken);
+      setUserSessions(list);
+    } catch (e) {
+      console.error("refreshUserSessions error:", e);
+    }
+  };
+
+  const handleLoadPastSession = async (pastSession) => {
+    if (!user) return;
+    setLoadingHistory(true);
+    try {
+      const traits = await fetchSessionTraits(FIREBASE_CONFIG.projectId, FIREBASE_CONFIG.apiKey, user.uid, pastSession.id, user.idToken);
+      const traitDefs = getTraitDefs(pastSession.mode);
+      const mappedTraits = traits.map(t => {
+        const d = traitDefs.find(x => x.key === t.key);
+        return {
+          ...t,
+          ...d,
+          scoreColor: getScoreColor(t.score, t.category || d?.category),
+          scoreLabel: getScoreZoneLabel(t.score, t.category || d?.category)
+        };
+      });
+      const rd = {
+        ...pastSession,
+        traits: mappedTraits,
+        overallScore: Number(pastSession.overallScore)
+      };
+      setReport(rd);
+      setScreen("report");
+      setReportTab("traits");
+    } catch (e) {
+      console.error("handleLoadPastSession error:", e);
+      alert("Failed to load past session: " + e.message);
+    }
+    setLoadingHistory(false);
+  };
+
+  useEffect(() => {
+    if (user && user.uid && user.idToken) {
+      refreshUserSessions(user.uid, user.idToken);
+    } else {
+      setUserSessions([]);
+    }
+  }, [user]);
 
   // Auth form
   const [authMode, setAuthMode] = useState("signup");
@@ -502,10 +606,10 @@ function XyrellaApp() {
   // Context options per mode
   const contextOptions = mode === "business"
     ? ["Sales Call","Discovery Call","Demo Meeting","Negotiation","Follow-Up","Networking"]
-    : ["First Date","Second Date","Friendship","Family","Business Meeting"];
+    : ["Date","Friendship","Family"];
 
   // Set default context when mode changes
-  useEffect(() => { if (mode) setContext(mode === "business" ? "Sales Call" : "First Date"); }, [mode]);
+  useEffect(() => { if (mode) setContext(mode === "business" ? "Sales Call" : "Date"); }, [mode]);
 
   // Auth handlers
   const handleSignup = async () => {
@@ -554,8 +658,17 @@ function XyrellaApp() {
       let profile = null;
       try {
         profile = await fetchUserProfile(FIREBASE_CONFIG.projectId, FIREBASE_CONFIG.apiKey, r.localId, r.idToken);
+        if (!profile) {
+          profile = {
+            displayName: r.displayName || authEmail.split("@")[0],
+            email: r.email || authEmail,
+            phoneNumber: "",
+            igHandle: ""
+          };
+          await saveUserProfile(FIREBASE_CONFIG.projectId, FIREBASE_CONFIG.apiKey, r.localId, { ...profile, trialRecordings: trialCount }, r.idToken);
+        }
       } catch (err) {
-        console.error("Error fetching user profile:", err);
+        console.error("Error fetching/creating user profile:", err);
       }
       setUser({
         uid: r.localId,
@@ -633,7 +746,13 @@ function XyrellaApp() {
       const traits = result.traits.map(t => { const d=traitDefs.find(x=>x.key===t.key); return {...t,...d, scoreColor:getScoreColor(t.score,t.category||d?.category), scoreLabel:getScoreZoneLabel(t.score,t.category||d?.category)}; });
       const rd = {...result, traits, transcript:ft, context, subjectName, mode, date:new Date().toISOString().split("T")[0], duration:formatTime(recordingTime)};
       setReport(rd);
-      if (user&&FIREBASE_CONFIG.apiKey) { const sid=await saveToFirebase(FIREBASE_CONFIG.projectId,FIREBASE_CONFIG.apiKey,user.uid,rd,user.idToken,user.displayName,user.email||"Anonymous"); if(sid) setSavedToFirebase(true); }
+      if (user&&FIREBASE_CONFIG.apiKey) {
+        const sid=await saveToFirebase(FIREBASE_CONFIG.projectId,FIREBASE_CONFIG.apiKey,user.uid,rd,user.idToken,user.displayName,user.email||"Anonymous");
+        if(sid) {
+          setSavedToFirebase(true);
+          await refreshUserSessions(user.uid, user.idToken);
+        }
+      }
       clearInterval(si); setScreen("report"); setReportTab("traits");
     } catch(e) { clearInterval(si); alert("Analysis error: "+e.message); setScreen("recording"); }
   };
@@ -784,6 +903,7 @@ function XyrellaApp() {
     const mIcon = getModeIcon(mode);
     const mLabel = getModeLabel(mode);
     const namePlaceholder = mode==="business" ? "Prospect's name (e.g. John, Acme Corp...)" : "Date's name (e.g. Jessica, Mike...)";
+    const matchingSessions = user ? userSessions.filter(s => s.subjectName.toLowerCase().trim() === subjectName.toLowerCase().trim() && s.mode === mode) : [];
 
     return shell(<div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
@@ -796,6 +916,31 @@ function XyrellaApp() {
       </div>
 
       <input placeholder={namePlaceholder} value={subjectName} onChange={e=>setSubjectName(e.target.value)} maxLength={40} style={{width:"100%",padding:"12px 14px",borderRadius:12,border:`1px solid ${C.border}`,background:C.card,color:C.text,fontSize:15,marginBottom:16,fontFamily:FONTS.body,boxSizing:"border-box"}}/>
+
+      {matchingSessions.length > 0 && (
+        <div style={{background:C.card, border:`1px solid ${accent}40`, borderRadius:14, padding:14, marginBottom:16}}>
+          <div style={{fontSize:12, fontWeight:700, color:accentSoft, textTransform:"uppercase", letterSpacing:.5, marginBottom:10, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+            <span>📅 Past Conversations ({matchingSessions.length})</span>
+            {loadingHistory && <span style={{fontSize:11, textTransform:"none", color:C.muted}}>Loading...</span>}
+          </div>
+          <div style={{display:"flex", flexDirection:"column", gap:8, maxHeight:150, overflowY:"auto"}}>
+            {matchingSessions.map(s => (
+              <div key={s.id} onClick={() => !loadingHistory && handleLoadPastSession(s)} style={{display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 12px", background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, cursor:loadingHistory ? "default" : "pointer", transition:"border-color 0.2s, background 0.2s"}} onMouseEnter={e => e.currentTarget.style.borderColor = accent} onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
+                <div style={{display:"flex", flexDirection:"column", gap:2}}>
+                  <span style={{fontSize:13, fontWeight:600, color:C.text}}>{s.context || "No Context"}</span>
+                  <span style={{fontSize:11, color:C.muted}}>{s.date} • {s.duration}</span>
+                </div>
+                <div style={{display:"flex", alignItems:"center", gap:8}}>
+                  <div style={{background:`${getScoreColor(s.overallScore, s.mode === "business" ? "buyer" : "positive")}15`, color:getScoreColor(s.overallScore, s.mode === "business" ? "buyer" : "positive"), padding:"4px 8px", borderRadius:8, fontSize:12, fontWeight:700}}>
+                    Score: {s.overallScore}
+                  </div>
+                  <span style={{color:C.muted, fontSize:12}}>➡️</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
         {contextOptions.map(ctx=>(<button key={ctx} onClick={()=>setContext(ctx)} style={{padding:"8px 14px",borderRadius:20,border:`1px solid ${context===ctx?accent:C.border}`,background:context===ctx?getModeGlow(mode):"none",color:context===ctx?accentSoft:C.muted,fontSize:12,cursor:"pointer",fontFamily:FONTS.body}}>{ctx}</button>))}
