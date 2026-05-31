@@ -867,8 +867,8 @@ function XyrellaApp() {
       <div style={{fontFamily:FONTS.display,fontSize:26,fontWeight:700}}>{authMode==="signup"?"Create Your Account":"Welcome Back"}</div>
       <div style={{color:C.muted,fontSize:13,marginTop:6}}>{authMode==="signup"?"Get 5 free credits when you sign up":"Sign in to access your reports"}</div>
     </div>
-    <div style={{display:"flex",background:C.surface,borderRadius:10,padding:3,marginBottom:20}}>
-      {["signup","signin"].map(m=>(<div key={m} onClick={()=>{setAuthMode(m);setAuthError("");}} style={{flex:1,padding:10,textAlign:"center",fontSize:14,fontWeight:600,borderRadius:8,cursor:"pointer",background:authMode===m?C.card:"none",color:authMode===m?C.text:C.muted}}>{m==="signup"?"Sign Up":"Sign In"}</div>))}
+    <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
+      {["signup","signin"].map(m=>(<div key={m} onClick={()=>{setAuthMode(m);setAuthError("");}} style={{padding:"12px",textAlign:"center",fontSize:14,fontWeight:600,borderRadius:10,border:`1px solid ${C.border}`,cursor:"pointer",background:authMode===m?`linear-gradient(135deg,${C.accent},#5B21B6)`:C.card,color:authMode===m?"#fff":C.muted}}>{m==="signup"?"Sign Up":"Sign In"}</div>))}
     </div>
     {authError&&<div style={{background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.25)",borderRadius:10,padding:"10px 14px",fontSize:13,color:"#fca5a5",marginBottom:14,lineHeight:1.4}}>{authError}</div>}
     {authMode==="signup"&&<>
