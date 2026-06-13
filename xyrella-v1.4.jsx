@@ -79,7 +79,9 @@ const fetchUserSessions = async (projectId, apiKey, userId, idToken) => {
         transcript: fields.transcript?.stringValue || "",
         overallScore: Number(fields.overallScore?.doubleValue || fields.overallScore?.integerValue || 0),
         summary: fields.summary?.stringValue || "",
-        userId: fields.userId?.stringValue || ""
+        userId: fields.userId?.stringValue || "",
+        otherParticipants: Number(fields.otherParticipants?.integerValue || 1),
+        voiceFocusEnabled: !!fields.voiceFocusEnabled?.booleanValue
       };
     });
   } catch (e) {
@@ -263,6 +265,8 @@ const saveToFirebase = async (projectId, apiKey, userId, data, idToken, userName
       overallScore:{doubleValue:data.overallScore}, summary:{stringValue:data.summary||""},
       traitCount:{integerValue:"37"}, modelVersion:{stringValue:"claude-sonnet-4-20250514"}, userId:{stringValue:userId},
       userName:{stringValue:userName||"Guest User"}, userEmail:{stringValue:userEmail||"Anonymous"},
+      otherParticipants:{integerValue:String(data.otherParticipants || 1)},
+      voiceFocusEnabled:{booleanValue:!!data.voiceFocusEnabled}
     };
     const sRes = await fetch(`${base}/users/${userId}/sessions?key=${apiKey}`, {
       method:"POST",
@@ -525,6 +529,8 @@ function XyrellaApp() {
   const [savedToFirebase, setSavedToFirebase] = useState(false);
   const [userSessions, setUserSessions] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [otherParticipants, setOtherParticipants] = useState(1);
+  const [voiceFocus, setVoiceFocus] = useState(false);
 
   const refreshUserSessions = async (userId, idToken) => {
     if (!userId || !idToken) return;
@@ -744,7 +750,7 @@ function XyrellaApp() {
       const result = await analyzeTranscript(ft, context, mode, user?.idToken);
       const traitDefs = getTraitDefs(mode);
       const traits = result.traits.map(t => { const d=traitDefs.find(x=>x.key===t.key); return {...t,...d, scoreColor:getScoreColor(t.score,t.category||d?.category), scoreLabel:getScoreZoneLabel(t.score,t.category||d?.category)}; });
-      const rd = {...result, traits, transcript:ft, context, subjectName, mode, date:new Date().toISOString().split("T")[0], duration:formatTime(recordingTime)};
+      const rd = {...result, traits, transcript:ft, context, subjectName, mode, date:new Date().toISOString().split("T")[0], duration:formatTime(recordingTime), otherParticipants, voiceFocusEnabled: voiceFocus};
       setReport(rd);
       if (user&&FIREBASE_CONFIG.apiKey) {
         const sid=await saveToFirebase(FIREBASE_CONFIG.projectId,FIREBASE_CONFIG.apiKey,user.uid,rd,user.idToken,user.displayName,user.email||"Anonymous");
@@ -847,7 +853,7 @@ function XyrellaApp() {
         </div>
       </div>
     </div>
-    <div onClick={()=>{setMode("business");setScreen("recording");}} style={{background:C.card,borderRadius:20,padding:24,marginBottom:20,border:`1px solid ${C.border}`,cursor:"pointer",transition:"all 0.2s",position:"relative",overflow:"hidden"}}>
+    <div onClick={()=>{setMode("business");setScreen("recording");}} style={{display:"none",background:C.card,borderRadius:20,padding:24,marginBottom:20,border:`1px solid ${C.border}`,cursor:"pointer",transition:"all 0.2s",position:"relative",overflow:"hidden"}}>
       <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:`linear-gradient(90deg,${C.bizAccent},#60A5FA)`}}/>
       <div style={{display:"flex",alignItems:"center",gap:16}}>
         <div style={{fontSize:44}}>💼</div>
@@ -947,7 +953,7 @@ function XyrellaApp() {
       </div>
 
       {/* Bluetooth Coaching Toggle */}
-      <div onClick={toggleCoaching} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:C.card,borderRadius:12,padding:"12px 16px",marginBottom:20,border:`1px solid ${coachingActive?C.teal+"40":C.border}`,cursor:"pointer"}}>
+      <div onClick={toggleCoaching} style={{display:"none",alignItems:"center",justifyContent:"space-between",background:C.card,borderRadius:12,padding:"12px 16px",marginBottom:20,border:`1px solid ${coachingActive?C.teal+"40":C.border}`,cursor:"pointer"}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <span style={{fontSize:20}}>🎧</span>
           <div>
@@ -957,6 +963,42 @@ function XyrellaApp() {
         </div>
         <div style={{width:40,height:22,borderRadius:11,background:coachingActive?C.teal:C.dim,position:"relative",transition:"background 0.2s"}}>
           <div style={{width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:2,left:coachingActive?20:2,transition:"left 0.2s"}}/>
+        </div>
+      </div>
+
+      {/* Voice Isolation & Focus Settings */}
+      <div style={{background:C.card, borderRadius:12, padding:"12px 16px", marginBottom:20, border:`1px solid ${C.border}`, width:"100%"}}>
+        <div style={{fontSize:12, fontWeight:700, color:accentSoft, textTransform:"uppercase", letterSpacing:.5, marginBottom:12}}>🗣️ Voice Isolation & Focus</div>
+        
+        {/* Speaker Selector */}
+        <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14}}>
+          <div>
+            <div style={{fontSize:13, fontWeight:600, color:C.text}}>Other Participants</div>
+            <div style={{fontSize:11, color:C.muted}}>Select the number of other speakers</div>
+          </div>
+          <div style={{display:"flex", background:C.surface, borderRadius:8, padding:2}}>
+            {[1, 4].map(num => (
+              <button key={num} onClick={() => setOtherParticipants(num)} style={{
+                padding:"6px 12px", border:"none", borderRadius:6, fontSize:12, fontWeight:600, cursor:"pointer",
+                background:otherParticipants === num ? accentGrad : "none",
+                color:otherParticipants === num ? "#fff" : C.muted,
+                fontFamily:FONTS.body, transition:"all 0.2s"
+              }}>
+                {num === 1 ? "1 Other" : "4 Others"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Noise Muting Toggle */}
+        <div onClick={() => setVoiceFocus(!voiceFocus)} style={{display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", paddingTop:10, borderTop:`1px solid ${C.border}`}}>
+          <div>
+            <div style={{fontSize:13, fontWeight:600, color:voiceFocus ? C.green : C.text}}>Mute Background Noise</div>
+            <div style={{fontSize:11, color:C.muted}}>Focus voice capture on active speakers</div>
+          </div>
+          <div style={{width:40, height:22, borderRadius:11, background:voiceFocus ? C.green : C.dim, position:"relative", transition:"background 0.2s"}}>
+            <div style={{width:18, height:18, borderRadius:"50%", background:"#fff", position:"absolute", top:2, left:voiceFocus ? 20 : 2, transition:"left 0.2s"}}/>
+          </div>
         </div>
       </div>
 
@@ -1025,21 +1067,22 @@ function XyrellaApp() {
           <div style={{textAlign:"center"}}><div style={{fontSize:20,fontWeight:700}}>37</div><div style={{fontSize:11,color:C.muted}}>Traits</div></div>
           <div style={{width:1,background:C.border}}/>
           <div style={{textAlign:"center"}}><div style={{fontSize:20,fontWeight:700}}>4</div><div style={{fontSize:11,color:C.muted}}>Categories</div></div>
-          {report.interests && <>
+          {/* Hide interests count on overview for now */}
+          {false && report.interests && <>
             <div style={{width:1,background:C.border}}/>
             <div style={{textAlign:"center"}}><div style={{fontSize:20,fontWeight:700}}>{(report.interests.likes?.length||0)+(report.interests.dislikes?.length||0)}</div><div style={{fontSize:11,color:C.muted}}>Interests</div></div>
           </>}
         </div>
       </div>
 
-      {/* Report Tabs */}
-      <div style={{display:"flex",background:C.surface,borderRadius:10,padding:3,marginBottom:16}}>
-        {[
-          {key:"traits",label:"Traits"},
-          {key:"interests",label:"Notes"},
-          ...(mode==="business"?[{key:"deal",label:"Deal Intel"}]:[]),
-        ].map(tab=>(<div key={tab.key} onClick={()=>setReportTab(tab.key)} style={{flex:1,padding:10,textAlign:"center",fontSize:13,fontWeight:600,borderRadius:8,cursor:"pointer",background:reportTab===tab.key?C.card:"none",color:reportTab===tab.key?C.text:C.muted}}>{tab.label}</div>))}
-      </div>
+      {/* Report Tabs - Hidden for now since only 'traits' is visible */}
+      {false && (
+        <div style={{display:"flex",background:C.surface,borderRadius:10,padding:3,marginBottom:16}}>
+          {[
+            {key:"traits",label:"Traits"},
+          ].map(tab=>(<div key={tab.key} onClick={()=>setReportTab(tab.key)} style={{flex:1,padding:10,textAlign:"center",fontSize:13,fontWeight:600,borderRadius:8,cursor:"pointer",background:reportTab===tab.key?C.card:"none",color:reportTab===tab.key?C.text:C.muted}}>{tab.label}</div>))}
+        </div>
+      )}
 
       {/* Tab Content */}
       {reportTab==="traits" && <>
