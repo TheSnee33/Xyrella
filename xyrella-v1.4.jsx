@@ -798,8 +798,8 @@ function XyrellaApp() {
       <div style={{color:C.muted,fontSize:14,marginTop:10,letterSpacing:3,textTransform:"uppercase"}}>Know More. Win More.</div>
       <div style={{display:"flex",gap:20,marginTop:24}}>
         <div style={{fontSize:12,color:C.dateAccentSoft}}>💘 DateIQ</div>
-        <div style={{color:C.dim}}>|</div>
-        <div style={{fontSize:12,color:C.bizAccentSoft}}>💼 BusinessIQ</div>
+        <div style={{display:"none",color:C.dim}}>|</div>
+        <div style={{display:"none",fontSize:12,color:C.bizAccentSoft}}>💼 BusinessIQ</div>
       </div>
     </div>
   );
@@ -819,15 +819,15 @@ function XyrellaApp() {
     <div style={{textAlign:"center",marginBottom:28}}>
       <div style={{fontSize:48,marginBottom:8}}>🧠</div>
       <div style={{fontFamily:FONTS.display,fontSize:32,fontWeight:700,lineHeight:1.2}}>Intelligence for<br/><span style={{background:"linear-gradient(135deg,#E0427A,#3B82F6)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>every conversation.</span></div>
-      <div style={{color:C.muted,fontSize:14,marginTop:12,lineHeight:1.6}}>Record any conversation and get AI-powered analysis across <strong style={{color:C.text}}>37 key traits</strong> — for dating <em>and</em> business.</div>
+      <div style={{color:C.muted,fontSize:14,marginTop:12,lineHeight:1.6}}>Record any conversation and get AI-powered analysis across <strong style={{color:C.text}}>37 key traits</strong> — for dating.</div>
     </div>
     {[
       {icon:"💘",title:"DateIQ",desc:"Personality analysis for dates — spot red flags, find green flags"},
-      {icon:"💼",title:"BusinessIQ",desc:"Sales intelligence — read prospects, track deals, close smarter"},
-      {icon:"🎧",title:"Live Coaching",desc:"Get whispered suggestions through your Bluetooth headset in real-time"},
-      {icon:"📝",title:"Interest Tracking",desc:"AI notes what they like, dislike, and mention — never forget a detail"},
+      {icon:"💼",title:"BusinessIQ",desc:"Sales intelligence — read prospects, track deals, close smarter", hidden:true},
+      {icon:"🎧",title:"Live Coaching",desc:"Get whispered suggestions through your Bluetooth headset in real-time", hidden:true},
+      {icon:"📝",title:"Interest Tracking",desc:"AI notes what they like, dislike, and mention — never forget a detail", hidden:true},
     ].map((f,i)=>(
-      <div key={i} style={{display:"flex",gap:14,marginBottom:12,background:C.card,borderRadius:14,padding:16,border:`1px solid ${C.border}`}}><div style={{fontSize:28}}>{f.icon}</div><div><div style={{fontWeight:700,fontSize:15}}>{f.title}</div><div style={{color:C.muted,fontSize:13,marginTop:2}}>{f.desc}</div></div></div>
+      <div key={i} style={{display:f.hidden?"none":"flex",gap:14,marginBottom:12,background:C.card,borderRadius:14,padding:16,border:`1px solid ${C.border}`}}><div style={{fontSize:28}}>{f.icon}</div><div><div style={{fontWeight:700,fontSize:15}}>{f.title}</div><div style={{color:C.muted,fontSize:13,marginTop:2}}>{f.desc}</div></div></div>
     ))}
     <div style={{background:C.card,border:"1px solid rgba(34,197,94,.2)",borderRadius:14,padding:"14px 16px",marginBottom:20,textAlign:"center"}}>
       <div style={{fontSize:13,color:C.green,fontWeight:600}}>Create an account to start analyzing</div>
