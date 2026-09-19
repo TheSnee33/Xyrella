@@ -715,7 +715,7 @@ function XyrellaApp() {
     if (!SR) { alert("Speech recognition not supported. Use Chrome."); return; }
     liveTranscriptRef.current=""; setTranscript("");
     const rec = new SR(); rec.continuous=true; rec.interimResults=true; rec.lang="en-US";
-    rec.onresult = e => { let f=""; for(let i=0;i<e.results.length;i++) { if(e.results[i].isFinal) f+=e.results[i][0].transcript+" "; } liveTranscriptRef.current=f; setTranscript(f); };
+    rec.onresult = e => { let f=""; for(let i=0;i<e.results.length;i++) { f+=e.results[i][0].transcript+" "; } const clean=f.trim(); if(clean){ liveTranscriptRef.current=clean; setTranscript(clean); } };
     rec.start(); recognitionRef.current=rec; setIsRecording(true); setRecordingTime(0);
   };
   const stopRecording = () => { if(recognitionRef.current) recognitionRef.current.stop(); setIsRecording(false); };
@@ -740,7 +740,8 @@ function XyrellaApp() {
 
   // Analysis
   const runAnalysis = async () => {
-    const ft = liveTranscriptRef.current||transcript;
+    const ft = (liveTranscriptRef.current||transcript||"").trim();
+    if (!ft) { alert("No spoken words or transcript text detected. Please speak into your microphone or paste text before analyzing."); return; }
     if (!ft.trim()) { alert("No transcript captured."); return; }
     const nc = trialCount+1; setTrialCount(nc);
     setScreen("processing"); let step=0;

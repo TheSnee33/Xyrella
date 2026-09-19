@@ -196,10 +196,13 @@ exports.transcribeAudio = functions.https.onCall(async (data, context) => {
 exports.analyzeWithGemini = functions.https.onCall(async (data, context) => {
   // Authentication optional for guest access
 
-  const { transcript, mode = 'date', traitDefinitions = [] } = data;
+  const transcriptRaw = data?.transcript || data?.data?.transcript || '';
+  const transcript = String(transcriptRaw).trim();
+  const mode = data?.mode || data?.data?.mode || 'date';
+  const traitDefinitions = data?.traitDefinitions || data?.data?.traitDefinitions || [];
 
   if (!transcript) {
-    throw new functions.https.HttpsError('invalid-argument', 'transcript is required');
+    throw new functions.https.HttpsError('invalid-argument', 'No transcript captured. Please record spoken audio or paste text before analyzing.');
   }
 
   try {
@@ -341,7 +344,7 @@ exports.analyzeWithClaude = functions.https.onCall(async (data, context) => {
   const { transcript, mode = 'date', traitDefinitions = [] } = payload;
 
   if (!transcript) {
-    throw new functions.https.HttpsError('invalid-argument', 'transcript is required');
+    throw new functions.https.HttpsError('invalid-argument', 'No transcript captured. Please record spoken audio or paste text before analyzing.');
   }
 
   try {
