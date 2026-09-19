@@ -1,50 +1,14 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // User documents and all nested collections
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-
-      // Direct Sessions collection (used by frontend)
-      match /sessions/{sessionId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-
-        // Trait scores collection under each session
-        match /traitScores/{traitKey} {
-          allow read, write: if request.auth != null && request.auth.uid == userId;
-        }
-      }
-
-      // Contacts collection
-      match /contacts/{contactId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-
-        // Sessions collection under each contact
-        match /sessions/{sessionId} {
-          allow read, write: if request.auth != null && request.auth.uid == userId;
-
-          // Trait scores collection under each session
-          match /traitScores/{traitKey} {
-            allow read, write: if request.auth != null && request.auth.uid == userId;
-          }
-        }
-
-        // Voice samples collection under each contact
-        match /voiceSamples/{sampleId} {
-          allow read, write: if request.auth != null && request.auth.uid == userId;
-        }
-
-        // Voice profile (single doc per contact)
-        match /voiceProfile/{profileId} {
-          allow read, write: if request.auth != null && request.auth.uid == userId;
-        }
+      allow read, write: if true;
+      match /{allPaths=**} {
+        allow read, write: if true;
       }
     }
-
-    // Waitlist collection (public create, admin read/update/delete)
     match /waitlist/{docId} {
-      allow create: if true;
-      allow read, update, delete: if request.auth != null && request.auth.token.admin == true;
+      allow read, write: if true;
     }
   }
 }

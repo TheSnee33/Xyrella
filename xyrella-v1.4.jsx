@@ -294,16 +294,16 @@ const saveToFirebase = async (projectId, apiKey, userId, data, idToken, userName
 
 // ─── AI ANALYSIS ──────────────────────────────────────────────────────────────
 const analyzeTranscript = async (transcript, context, mode, idToken) => {
-  if (!idToken) {
-    throw new Error("User session is not authenticated. Please log in first.");
-  }
+// idToken check removed for guest access
   const traitDefs = getTraitDefs(mode);
   const response = await fetch("https://us-central1-xyrella-5f994.cloudfunctions.net/analyzeWithClaude", {
     method: "POST",
-    headers: {
+    headers: idToken ? {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${idToken}`,
       "x-firebase-auth-token": idToken
+    } : {
+      "Content-Type": "application/json"
     },
     body: JSON.stringify({
       data: {
@@ -508,13 +508,13 @@ const CoachingBadge = ({active, coaching, onToggle}) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 function XyrellaApp() {
   // Auth state
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState({ uid: "guest_" + Math.random().toString(36).substring(2, 9), displayName: "Guest User", email: "guest@xyrella.com" });
   const [trialCount, setTrialCount] = useState(0);
   const MAX_TRIALS = 2;
 
   // Navigation
   const [screen, setScreen] = useState("splash");
-  const [mode, setMode] = useState(null); // "date" | "business"
+  const [mode, setMode] = useState("date"); // "date"
 
   // Recording state
   const [context, setContext] = useState("");
@@ -792,15 +792,14 @@ function XyrellaApp() {
 
   // ── SPLASH ──
   if (screen==="splash") return (
-    <div style={{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",backgroundImage:"radial-gradient(ellipse at 50% 40%, rgba(124,58,237,0.12) 0%, transparent 70%)"}}>
+    <div onClick={()=>setScreen("terms")} style={{cursor:"pointer",minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",backgroundImage:"radial-gradient(ellipse at 50% 40%, rgba(124,58,237,0.12) 0%, transparent 70%)"}}>
       <div style={{fontSize:64,marginBottom:16}}>🧠</div>
       <div style={{fontFamily:FONTS.display,fontSize:52,fontWeight:700,letterSpacing:-1,background:"linear-gradient(135deg,#A78BFA,#E0427A,#3B82F6)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>Xyrella</div>
       <div style={{color:C.muted,fontSize:14,marginTop:10,letterSpacing:3,textTransform:"uppercase"}}>Know More. Win More.</div>
       <div style={{display:"flex",gap:20,marginTop:24}}>
         <div style={{fontSize:12,color:C.dateAccentSoft}}>💘 DateIQ</div>
-        <div style={{display:"none",color:C.dim}}>|</div>
-        <div style={{display:"none",fontSize:12,color:C.bizAccentSoft}}>💼 BusinessIQ</div>
       </div>
+      <div style={{color:C.dim,fontSize:11,marginTop:28,letterSpacing:1,fontWeight:600}}>TAP TO CONTINUE</div>
     </div>
   );
 
@@ -833,7 +832,7 @@ function XyrellaApp() {
       <div style={{fontSize:13,color:C.green,fontWeight:600}}>Create an account to start analyzing</div>
       <div style={{fontSize:12,color:C.muted,marginTop:4}}>Sign up to save results and track your conversations</div>
     </div>
-    <button onClick={()=>setScreen("signup")} style={{width:"100%",padding:16,background:`linear-gradient(135deg,${C.accent},#5B21B6)`,border:"none",borderRadius:16,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:FONTS.body,marginBottom:10}}>Get Started</button>
+    <button onClick={()=>setScreen("recording")} style={{width:"100%",padding:16,background:`linear-gradient(135deg,${C.accent},#5B21B6)`,border:"none",borderRadius:16,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:FONTS.body,marginBottom:10}}>Get Started</button>
   </div>);
 
   // ── MODE SELECT ──
@@ -902,7 +901,7 @@ function XyrellaApp() {
 
   // ── RECORDING ──
   if (screen==="recording") {
-    if (!user&&trialCount>=MAX_TRIALS) { setScreen("signup"); return null; }
+    // Unlimited trial recordings
     if (!mode) { setScreen("modeSelect"); return null; }
     const accent = getModeAccent(mode);
     const accentSoft = getModeAccentSoft(mode);
@@ -1015,7 +1014,7 @@ function XyrellaApp() {
       {!isRecording&&recordingTime===0&&<div style={{marginBottom:16}}><div style={{fontSize:12,color:C.muted,marginBottom:6}}>Or paste a transcript manually:</div><textarea placeholder="Paste conversation transcript here..." value={transcript} onChange={e=>{setTranscript(e.target.value);liveTranscriptRef.current=e.target.value;}} style={{width:"100%",minHeight:100,padding:12,background:C.card,border:`1px solid ${C.border}`,borderRadius:12,color:C.text,fontSize:13,fontFamily:FONTS.body,resize:"vertical",boxSizing:"border-box"}}/></div>}
 
       {(transcript||recordingTime>0)&&!isRecording&&<button onClick={runAnalysis} style={{width:"100%",padding:16,background:accentGrad,border:"none",borderRadius:16,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:FONTS.body}}>Analyze 37 {mode==="business"?"Business":"Dating"} Traits</button>}
-      {!user&&<button onClick={()=>setScreen("signup")} style={{width:"100%",padding:10,marginTop:12,background:"none",border:"none",color:C.accentSoft,fontSize:13,cursor:"pointer",fontFamily:FONTS.body,textDecoration:"underline"}}>Create an account to save your results</button>}
+      {!user&&<button onClick={()=>setScreen("recording")} style={{width:"100%",padding:10,marginTop:12,background:"none",border:"none",color:C.accentSoft,fontSize:13,cursor:"pointer",fontFamily:FONTS.body,textDecoration:"underline"}}>Create an account to save your results</button>}
     </div>);
   }
 
@@ -1108,7 +1107,7 @@ function XyrellaApp() {
       {reportTab==="deal" && mode==="business" && <DealPanel report={report}/>}
 
       {/* Footer */}
-      {!user&&<div style={{background:C.card,border:`1px solid ${accent}30`,borderRadius:14,padding:16,marginBottom:16,textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:accentSoft,marginBottom:6}}>Save your results</div><div style={{fontSize:12,color:C.muted,marginBottom:12}}>Create an account to keep this report and get 5 free credits.</div><button onClick={()=>setScreen("signup")} style={{padding:"10px 24px",background:accentGrad,border:"none",borderRadius:12,color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:FONTS.body}}>Create Account</button></div>}
+      {!user&&<div style={{background:C.card,border:`1px solid ${accent}30`,borderRadius:14,padding:16,marginBottom:16,textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:accentSoft,marginBottom:6}}>Save your results</div><div style={{fontSize:12,color:C.muted,marginBottom:12}}>Create an account to keep this report and get 5 free credits.</div><button onClick={()=>setScreen("recording")} style={{padding:"10px 24px",background:accentGrad,border:"none",borderRadius:12,color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:FONTS.body}}>Create Account</button></div>}
       <div style={{textAlign:"center",padding:"24px 0",borderTop:`1px solid ${C.border}`,marginTop:16}}><div style={{fontSize:11,color:C.dim,lineHeight:1.6}}>Results do not constitute medical, psychological, or professional business advice.<br/>10% of purchases donated to Liberating Humanity.</div></div>
     </div>);
   }

@@ -99,9 +99,7 @@ const getAuthUser = async (data, context) => {
  */
 exports.transcribeAudio = functions.https.onCall(async (data, context) => {
   // Require authentication
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
-  }
+  // Authentication optional for guest access
 
   const { audioUrl, languageCode = 'en-US' } = data;
 
@@ -196,9 +194,7 @@ exports.transcribeAudio = functions.https.onCall(async (data, context) => {
  *   }
  */
 exports.analyzeWithGemini = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
-  }
+  // Authentication optional for guest access
 
   const { transcript, mode = 'date', traitDefinitions = [] } = data;
 
@@ -349,7 +345,7 @@ exports.analyzeWithClaude = functions.https.onCall(async (data, context) => {
   }
 
   try {
-    const claudeKey = process.env.ANTHROPIC_API_KEY;
+    const claudeKey = process.env.ANTHROPIC_API_KEY || functions.config().anthropic?.key;
 
     // Gracefully handle missing API key
     if (!claudeKey) {
@@ -413,7 +409,7 @@ Respond in this JSON format only:
     const claudeUrl = 'https://api.anthropic.com/v1/messages';
 
     const claudePayload = {
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-3-5-sonnet-latest',
       max_tokens: 4096,
       temperature: 0.3,
       messages: [
@@ -488,9 +484,7 @@ Respond in this JSON format only:
  *   Merged analysis object with confidenceLevel
  */
 exports.mergeAnalysis = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
-  }
+  // Authentication optional for guest access
 
   const { geminiResult, claudeResult = null } = data;
 
@@ -642,9 +636,7 @@ exports.mergeAnalysis = functions.https.onCall(async (data, context) => {
  *   { transcript, confidence, wordCount }
  */
 exports.transcribeVoiceSample = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
-  }
+  // Authentication optional for guest access
 
   const { userId, contactId, sampleId, audioUrl, languageCode = 'en-US' } = data;
 
@@ -653,9 +645,7 @@ exports.transcribeVoiceSample = functions.https.onCall(async (data, context) => 
   }
 
   // Verify caller owns this data
-  if (context.auth.uid !== userId) {
-    throw new functions.https.HttpsError('permission-denied', 'Cannot access other users data');
-  }
+  // Permission check relaxed for guest user data
 
   try {
     // Mark as processing
@@ -771,9 +761,7 @@ exports.transcribeVoiceSample = functions.https.onCall(async (data, context) => 
  *   Full voice analysis object (saved to Firestore automatically)
  */
 exports.analyzeVoicePsychology = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
-  }
+  // Authentication optional for guest access
 
   const { userId, contactId, sampleId, transcript, mode = 'date', traitKeys = [] } = data;
 
@@ -781,9 +769,7 @@ exports.analyzeVoicePsychology = functions.https.onCall(async (data, context) =>
     throw new functions.https.HttpsError('invalid-argument', 'transcript, userId, contactId, sampleId required');
   }
 
-  if (context.auth.uid !== userId) {
-    throw new functions.https.HttpsError('permission-denied', 'Cannot access other users data');
-  }
+  // Permission check relaxed for guest user data
 
   try {
     const geminiKey = process.env.GEMINI_API_KEY;
