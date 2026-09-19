@@ -258,34 +258,35 @@ const getScoreZoneLabel = (s, cat) => {
 const saveToFirebase = async (projectId, apiKey, userId, data, idToken, userName, userEmail) => {
   const base = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
   try {
+    const headers = { "Content-Type": "application/json" };
+    if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
     const fields = {
       mode:{stringValue:data.mode||"date"}, subjectName:{stringValue:data.subjectName||"Unknown"},
-      context:{stringValue:data.context}, date:{stringValue:data.date},
-      duration:{stringValue:data.duration}, transcript:{stringValue:data.transcript},
-      overallScore:{doubleValue:data.overallScore}, summary:{stringValue:data.summary||""},
-      traitCount:{integerValue:"37"}, modelVersion:{stringValue:"claude-sonnet-4-20250514"}, userId:{stringValue:userId},
+      context:{stringValue:data.context || "Date"}, date:{stringValue:data.date || new Date().toISOString().split("T")[0]},
+      duration:{stringValue:data.duration || "00:00"}, transcript:{stringValue:data.transcript || ""},
+      overallScore:{doubleValue:Number(data.overallScore || 0)}, summary:{stringValue:data.summary||""},
+      traitCount:{integerValue:"37"}, modelVersion:{stringValue:"claude-3-5-sonnet-latest"}, userId:{stringValue:userId},
       userName:{stringValue:userName||"Guest User"}, userEmail:{stringValue:userEmail||"Anonymous"},
       otherParticipants:{integerValue:String(data.otherParticipants || 1)},
       voiceFocusEnabled:{booleanValue:!!data.voiceFocusEnabled}
     };
     const sRes = await fetch(`${base}/users/${userId}/sessions?key=${apiKey}`, {
       method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "Authorization": `Bearer ${idToken}`
-      },
+      headers,
       body: JSON.stringify({ fields }),
     });
     const session = await sRes.json();
+    console.log("Firestore session response:", session);
     const sId = session.name?.split("/").pop();
-    for (const t of data.traits) {
+    if (!sId) {
+      console.error("Failed to create session document:", session);
+      return null;
+    }
+    for (const t of (data.traits || [])) {
       await fetch(`${base}/users/${userId}/sessions/${sId}/traitScores/${t.key}?key=${apiKey}`, {
         method:"PATCH",
-        headers:{
-          "Content-Type":"application/json",
-          "Authorization": `Bearer ${idToken}`
-        },
-        body: JSON.stringify({ fields: { traitKey:{stringValue:t.key}, label:{stringValue:t.label}, category:{stringValue:t.category}, score:{doubleValue:t.score}, maxScore:{integerValue:"100"}, notes:{stringValue:t.notes||""} } }),
+        headers,
+        body: JSON.stringify({ fields: { traitKey:{stringValue:t.key}, label:{stringValue:t.label||t.key}, category:{stringValue:t.category||"positive"}, score:{doubleValue:Number(t.score||0)}, maxScore:{integerValue:"100"}, notes:{stringValue:t.notes||""} } }),
       });
     }
     return sId;

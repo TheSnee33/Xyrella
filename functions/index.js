@@ -1,81 +1,14 @@
-/**
- * Xyrella Cloud Functions (Firebase)
- * Project: xyrella-5f994
- *
- * Callable functions:
- * 1. transcribeAudio - Speech-to-Text transcription
- * 2. analyzeWithGemini - AI analysis with Gemini 2.0 Flash
- * 3. analyzeWithClaude - AI analysis with Claude Sonnet 4
- * 4. mergeAnalysis - Combine both AI results
- * 5. analyzeVoicePsychology - Voice-based psychological trait analysis (Gemini)
- * 6. transcribeVoiceSample - Transcribe uploaded voice samples
- */
-
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const fetch = require('node-fetch');
 
+const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || (functions.config().anthropic && functions.config().anthropic.key);
+const GEMINI_KEY = process.env.GEMINI_API_KEY || (functions.config().gemini && functions.config().gemini.key);
+
 admin.initializeApp();
 
-// Project constants (Updated: 2026-05-30)
-const PROJECT_ID = 'xyrella-5f994';
-
-// Helper to verify auth token from context or headers (supports custom REST fetch requests)
-const getAuthUser = async (data, context) => {
-  console.log("DEBUG getAuthUser START - env keys:", Object.keys(process.env));
-  console.log("DEBUG getAuthUser START - input parameters:", {
-    hasData: !!data,
-    dataType: typeof data,
-    hasContext: !!context,
-    contextType: typeof context,
-    contextHasAuth: context ? !!context.auth : false,
-    dataHasAuth: data ? !!data.auth : false
-  });
-
-  if (context && context.auth) {
-    console.log("DEBUG getAuthUser - returning context.auth", JSON.stringify(context.auth));
-    return context.auth;
-  }
-  if (data && data.auth) {
-    console.log("DEBUG getAuthUser - returning data.auth", JSON.stringify(data.auth));
-    return data.auth;
-  }
-  
-  const req1 = context && context.rawRequest ? context.rawRequest : null;
-  const req2 = data && data.rawRequest ? data.rawRequest : null;
-  const req = req1 || req2;
-  
-  if (!req) {
-    console.log("DEBUG getAuthUser - rawRequest is not found in context or data");
-    console.log("DEBUG getAuthUser keys - dataKeys:", data ? Object.keys(data) : [], "contextKeys:", context ? Object.keys(context) : []);
-  }
-
-  const headers = req && req.headers ? req.headers : {};
-  console.log("DEBUG getAuthUser - rawRequest headers keys:", Object.keys(headers));
-  
-  let idToken = headers['x-firebase-auth-token'] || headers['x-firebase-id-token'];
-  console.log("DEBUG getAuthUser - extracted x-firebase-auth-token:", idToken ? "FOUND (length " + idToken.length + ")" : "MISSING");
-  
-  if (!idToken && headers.authorization) {
-    console.log("DEBUG getAuthUser - checking authorization header:", headers.authorization.substring(0, 20) + "...");
-    if (headers.authorization.startsWith('Bearer ')) {
-      idToken = headers.authorization.split('Bearer ')[1];
-    }
-  }
-  
-  if (idToken) {
-    try {
-      const decodedToken = await admin.auth().verifyIdToken(idToken);
-      console.log("DEBUG getAuthUser - verified token, uid:", decodedToken.uid);
-      return { uid: decodedToken.uid, token: decodedToken };
-    } catch (e) {
-      console.error("DEBUG getAuthUser - Manual token verification failed:", e.message);
-    }
-  } else {
-    console.log("DEBUG getAuthUser - No token found to verify");
-  }
-  return null;
-};
+// Project constants
+const PROJECT_ID = 'dateiq-3f9b8';
 
 // ============================================================================
 // FUNCTION 1: TRANSCRIBE AUDIO
@@ -206,7 +139,7 @@ exports.analyzeWithGemini = functions.https.onCall(async (data, context) => {
   }
 
   try {
-    const geminiKey = process.env.GEMINI_API_KEY;
+    const geminiKey = GEMINI_KEY;
     if (!geminiKey) {
       throw new Error('Gemini API key not configured');
     }
@@ -232,8 +165,8 @@ ${traitsText}
 
 For EACH trait, provide:
 1. A score (0-100)
-2. A very brief, 1-sentence evidence note (maximum 15 words) explaining the score
-3. Relevant quote (only if highly critical and short, otherwise null)
+2. A 1-2 sentence evidence note
+3. Relevant quote(s) if applicable
 
 Also extract:
 - Overall quality score (0-100)
@@ -278,7 +211,7 @@ Respond in this JSON format only:
         temperature: 0.3,
         topP: 0.8,
         topK: 40,
-        maxOutputTokens: 4096
+        maxOutputTokens: 2048
       }
     };
 
@@ -335,20 +268,19 @@ Respond in this JSON format only:
  * Gracefully handles missing API key
  */
 exports.analyzeWithClaude = functions.https.onCall(async (data, context) => {
-  const authUser = await getAuthUser(data, context);
-  if (!authUser) {
-    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
-  }
+  // Authentication optional for guest access
 
-  const payload = data && data.data ? data.data : data;
-  const { transcript, mode = 'date', traitDefinitions = [] } = payload;
+  const transcriptRaw = data?.transcript || data?.data?.transcript || '';
+  const transcript = String(transcriptRaw).trim();
+  const mode = data?.mode || data?.data?.mode || 'date';
+  const traitDefinitions = data?.traitDefinitions || data?.data?.traitDefinitions || [];
 
   if (!transcript) {
     throw new functions.https.HttpsError('invalid-argument', 'No transcript captured. Please record spoken audio or paste text before analyzing.');
   }
 
   try {
-    const claudeKey = process.env.ANTHROPIC_API_KEY || functions.config().anthropic?.key;
+    const claudeKey = ANTHROPIC_KEY;
 
     // Gracefully handle missing API key
     if (!claudeKey) {
@@ -379,8 +311,8 @@ ${traitsText}
 
 For EACH trait, provide:
 1. A score (0-100)
-2. A very brief, 1-sentence evidence note (maximum 15 words) explaining the score
-3. Relevant quote (only if highly critical and short, otherwise null)
+2. A 1-2 sentence evidence note
+3. Relevant quote(s) if applicable
 
 Also extract:
 - Overall quality score (0-100)
@@ -413,7 +345,7 @@ Respond in this JSON format only:
 
     const claudePayload = {
       model: 'claude-3-5-sonnet-latest',
-      max_tokens: 4096,
+      max_tokens: 2048,
       temperature: 0.3,
       messages: [
         {
@@ -775,7 +707,7 @@ exports.analyzeVoicePsychology = functions.https.onCall(async (data, context) =>
   // Permission check relaxed for guest user data
 
   try {
-    const geminiKey = process.env.GEMINI_API_KEY;
+    const geminiKey = GEMINI_KEY;
     if (!geminiKey) {
       throw new Error('Gemini API key not configured');
     }
