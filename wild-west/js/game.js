@@ -129,6 +129,13 @@ class Game {
     window.addEventListener('keydown', (e) => this.handleKeyDown(e));
     window.addEventListener('keyup', (e) => this.handleKeyUp(e));
 
+    // Mouse click shooting on canvas
+    this.canvas.addEventListener('mousedown', (e) => {
+      if (e.button === 0 && this.state === 'playing') {
+        this.shootWeapon();
+      }
+    });
+
     // Character Selection
     const optColt = document.getElementById('opt-colt');
     const optSadie = document.getElementById('opt-sadie');
@@ -230,7 +237,7 @@ class Game {
         }
       }
     }
-    this.dom.ammoText.innerText = this.player.isReloading ? 'RELOADING...' : `${this.player.ammo} / 6 [K]`;
+    this.dom.ammoText.innerText = this.player.isReloading ? 'RELOADING...' : `${this.player.ammo} / 6 [A]`;
 
     if (this.dom.weaponLabel) {
       let lbl = 'SIX-SHOOTER';
@@ -297,14 +304,12 @@ class Game {
 
   // --- KEYBOARD CONTROLS ---
   handleKeyDown(e) {
-    this.keys[e.code] = true;
-
     // Initialize audio context on first key press
     window.soundEngine.init();
 
     // Advance Dialogue
     if (this.dialogueActive) {
-      if (e.code === 'KeyE' || e.code === 'Space' || e.code === 'KeyL' || e.key === 'l' || e.key === 'L' || e.code === 'Enter') {
+      if (e.code === 'KeyE' || e.code === 'Space' || e.code === 'KeyL' || (e.key && e.key.toLowerCase() === 'l') || e.code === 'Enter') {
         e.preventDefault();
         this.advanceDialogue();
         return;
@@ -325,9 +330,9 @@ class Game {
     // Shoot Weapon: L key (primary) or Space Bar
     const isShootKey = (
       e.code === 'KeyL' ||
-      e.key === 'l' ||
-      e.key === 'L' ||
+      (e.key && e.key.toLowerCase() === 'l') ||
       e.keyCode === 76 ||
+      e.which === 76 ||
       e.code === 'Space' ||
       e.key === ' ' ||
       e.keyCode === 32
@@ -339,15 +344,18 @@ class Game {
       return;
     }
 
-    // Reload Cylinder: K Key (or R)
+    // Reload Cylinder: A Key (primary), or K / R
     const isReloadKey = (
+      e.code === 'KeyA' ||
+      (e.key && e.key.toLowerCase() === 'a') ||
+      e.keyCode === 65 ||
+      e.which === 65 ||
       e.code === 'KeyK' ||
-      e.key === 'k' ||
-      e.key === 'K' ||
+      (e.key && e.key.toLowerCase() === 'k') ||
       e.keyCode === 75 ||
       e.code === 'KeyR' ||
-      e.key === 'r' ||
-      e.key === 'R'
+      (e.key && e.key.toLowerCase() === 'r') ||
+      e.keyCode === 82
     );
 
     if (isReloadKey) {
@@ -357,33 +365,36 @@ class Game {
     }
 
     // Throw Dynamite: G Key
-    if (e.code === 'KeyG' || e.key === 'g' || e.key === 'G') {
+    if (e.code === 'KeyG' || (e.key && e.key.toLowerCase() === 'g')) {
       e.preventDefault();
       this.throwDynamite();
       return;
     }
 
     // Interact: E Key
-    if (e.code === 'KeyE' || e.key === 'e' || e.key === 'E') {
+    if (e.code === 'KeyE' || (e.key && e.key.toLowerCase() === 'e')) {
       e.preventDefault();
       this.interact();
       return;
     }
 
     // Dead-Eye Slow Motion: F Key
-    if (e.code === 'KeyF' || e.key === 'f' || e.key === 'F') {
+    if (e.code === 'KeyF' || (e.key && e.key.toLowerCase() === 'f')) {
       e.preventDefault();
       this.toggleDeadEye();
       return;
     }
 
     // Mute toggle: M Key
-    if (e.code === 'KeyM' || e.key === 'm' || e.key === 'M') {
+    if (e.code === 'KeyM' || (e.key && e.key.toLowerCase() === 'm')) {
       e.preventDefault();
       const active = window.soundEngine.toggleMute();
       document.getElementById('btn-sound-toggle').innerText = active ? '🔊 Sound: ON' : '🔈 Sound: OFF';
       return;
     }
+
+    // Track movement keys
+    this.keys[e.code] = true;
   }
 
   handleKeyUp(e) {
@@ -396,7 +407,7 @@ class Game {
 
     if (this.player.ammo <= 0) {
       window.soundEngine.playEmptyClick();
-      this.showFloatingText(this.player.x, this.player.y - 25, '*CLICK* Reload [K]!', '#ff9800');
+      this.showFloatingText(this.player.x, this.player.y - 25, '*CLICK* Press [A] to Reload!', '#ff9800');
       this.reloadRevolver(); // auto reload on empty click
       return;
     }
@@ -462,7 +473,11 @@ class Game {
   }
 
   reloadRevolver() {
-    if (this.player.isReloading || this.player.ammo === this.player.maxAmmo) return;
+    if (this.player.isReloading) return;
+    if (this.player.ammo === this.player.maxAmmo) {
+      this.showFloatingText(this.player.x, this.player.y - 25, 'Cylinder Full!', '#3498db');
+      return;
+    }
 
     this.player.isReloading = true;
     window.soundEngine.playReload();
@@ -473,7 +488,7 @@ class Game {
       this.player.isReloading = false;
       this.updateCylinderHUD();
       this.showFloatingText(this.player.x, this.player.y - 25, 'LOADED!', '#ffd700');
-    }, 700);
+    }, 600);
   }
 
   throwDynamite() {
@@ -811,7 +826,7 @@ class Game {
       let dy = 0;
       if (this.keys['KeyW'] || this.keys['ArrowUp']) dy -= 1;
       if (this.keys['KeyS'] || this.keys['ArrowDown']) dy += 1;
-      if (this.keys['KeyA'] || this.keys['ArrowLeft']) dx -= 1;
+      if (this.keys['ArrowLeft'] || this.keys['KeyQ']) dx -= 1;
       if (this.keys['KeyD'] || this.keys['ArrowRight']) dx += 1;
 
       if (dx !== 0 && dy !== 0) {
@@ -862,8 +877,8 @@ class Game {
       b.y += b.vy;
       b.life--;
 
-      // Check wall / obstacle hit
-      if (this.checkObstacleCollision(b.x, b.y, 4)) {
+      // Check wall / obstacle hit (don't block on barrels here, let bullet destroy barrel)
+      if (this.checkObstacleCollision(b.x, b.y, 4, false)) {
         window.soundEngine.playRicochet();
         this.createSparks(b.x, b.y, 6);
         this.bullets.splice(i, 1);
@@ -1002,46 +1017,52 @@ class Game {
       en.angle = angle;
 
       if (en.type === 'scorpion') {
-        const detectRange = this.currentZone.id === 1 ? 180 : 320;
+        const detectRange = this.currentZone.id === 1 ? 130 : 320;
         if (dist < detectRange) {
-          en.x += Math.cos(angle) * en.speed * timeScale;
-          en.y += Math.sin(angle) * en.speed * timeScale;
+          const moveX = Math.cos(angle) * en.speed * timeScale;
+          const moveY = Math.sin(angle) * en.speed * timeScale;
+          this.moveEnemy(en, moveX, moveY);
+
           if (dist < 22 && this.player.invulnerableTimer <= 0) {
             const dmg = this.currentZone.id === 1 ? 8 : 15;
             this.damagePlayer(dmg, 'Stung by a Desert Scorpion!');
           }
         }
       } else if (en.type === 'snake') {
-        const detectRange = this.currentZone.id === 1 ? 170 : 300;
+        const detectRange = this.currentZone.id === 1 ? 130 : 300;
         if (dist < detectRange) {
-          if (dist < 140 && Math.random() < 0.03) {
+          if (dist < 120 && Math.random() < 0.03) {
             window.soundEngine.playRattle();
           }
-          en.x += Math.cos(angle) * en.speed * timeScale;
-          en.y += Math.sin(angle) * en.speed * timeScale;
+          const moveX = Math.cos(angle) * en.speed * timeScale;
+          const moveY = Math.sin(angle) * en.speed * timeScale;
+          this.moveEnemy(en, moveX, moveY);
+
           if (dist < 22 && this.player.invulnerableTimer <= 0) {
             const dmg = this.currentZone.id === 1 ? 10 : 20;
             this.damagePlayer(dmg, 'Bitten by a venomous Rattlesnake!');
           }
         }
       } else if (en.type === 'bandit') {
-        const detectRange = this.currentZone.id === 1 ? 260 : 420;
+        const detectRange = this.currentZone.id === 1 ? 200 : 420;
         if (dist < detectRange) {
           // Maintain tactical distance
           if (dist > 180) {
-            en.x += Math.cos(angle) * en.speed * timeScale;
-            en.y += Math.sin(angle) * en.speed * timeScale;
+            const moveX = Math.cos(angle) * en.speed * timeScale;
+            const moveY = Math.sin(angle) * en.speed * timeScale;
+            this.moveEnemy(en, moveX, moveY);
           } else if (dist < 100) {
-            en.x -= Math.cos(angle) * en.speed * timeScale;
-            en.y -= Math.sin(angle) * en.speed * timeScale;
+            const moveX = -Math.cos(angle) * en.speed * timeScale;
+            const moveY = -Math.sin(angle) * en.speed * timeScale;
+            this.moveEnemy(en, moveX, moveY);
           }
 
           en.shootCooldown = (en.shootCooldown || 140) - timeScale;
           if (en.shootCooldown <= 0) {
-            en.shootCooldown = this.currentZone.id === 1 ? (250 + Math.random() * 80) : (130 + Math.random() * 50);
+            en.shootCooldown = this.currentZone.id === 1 ? (300 + Math.random() * 90) : (130 + Math.random() * 50);
             window.soundEngine.playGunshot(false);
-            const bSpeed = this.currentZone.id === 1 ? 4.2 : 7;
-            const bDmg = this.currentZone.id === 1 ? 8 : 18;
+            const bSpeed = this.currentZone.id === 1 ? 3.5 : 7;
+            const bDmg = this.currentZone.id === 1 ? 7 : 18;
             this.enemyBullets.push({
               x: en.x + Math.cos(angle) * 16,
               y: en.y + Math.sin(angle) * 16,
@@ -1072,8 +1093,9 @@ class Game {
         // Black Jack Bart
         if (dist < 550) {
           if (dist > 220) {
-            en.x += Math.cos(angle) * en.speed * timeScale;
-            en.y += Math.sin(angle) * en.speed * timeScale;
+            const moveX = Math.cos(angle) * en.speed * timeScale;
+            const moveY = Math.sin(angle) * en.speed * timeScale;
+            this.moveEnemy(en, moveX, moveY);
           }
 
           en.shootCooldown = (en.shootCooldown || 90) - timeScale;
@@ -1221,7 +1243,25 @@ class Game {
     }
   }
 
-  checkObstacleCollision(x, y, radius) {
+  moveEnemy(en, dx, dy) {
+    const radius = en.isBoss ? 28 : (en.type === 'scorpion' || en.type === 'snake' ? 14 : 16);
+    const targetX = en.x + dx;
+    const targetY = en.y + dy;
+
+    // Slide along walls: test X and Y separately
+    if (!this.checkObstacleCollision(targetX, en.y, radius, false)) {
+      en.x = targetX;
+    }
+    if (!this.checkObstacleCollision(en.x, targetY, radius, false)) {
+      en.y = targetY;
+    }
+
+    // Keep enemies within world boundaries
+    en.x = Math.max(35, Math.min(this.currentZone.width - 35, en.x));
+    en.y = Math.max(35, Math.min(this.currentZone.height - 35, en.y));
+  }
+
+  checkObstacleCollision(x, y, radius, checkBarrels = true) {
     // Check against buildings
     if (this.currentZone.buildings) {
       for (const b of this.currentZone.buildings) {
@@ -1243,9 +1283,11 @@ class Game {
     }
 
     // Check against barrels
-    for (const bar of this.barrels) {
-      if (Math.hypot(x - bar.x, y - bar.y) < radius + 10) {
-        return true;
+    if (checkBarrels) {
+      for (const bar of this.barrels) {
+        if (Math.hypot(x - bar.x, y - bar.y) < radius + 10) {
+          return true;
+        }
       }
     }
 

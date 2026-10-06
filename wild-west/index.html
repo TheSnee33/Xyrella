@@ -43,7 +43,7 @@
           <div class="cylinder-display" id="cylinder-display">
             <!-- 6 chambers rendered here -->
           </div>
-          <span id="ammo-text">6 / 6 [K]</span>
+          <span id="ammo-text">6 / 6 [A]</span>
         </div>
 
         <div class="hud-card score-card">
@@ -140,9 +140,9 @@
 
     <!-- Controls & Help Footer -->
     <footer id="game-controls-bar">
-      <div class="control-item"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or <kbd>Arrows</kbd> Move</div>
-      <div class="control-item"><kbd>SPACE</kbd> or <kbd>L</kbd> Shoot</div>
-      <div class="control-item"><kbd>K</kbd> Reload</div>
+      <div class="control-item"><kbd>Arrows</kbd> (or <kbd>W</kbd><kbd>S</kbd><kbd>D</kbd>) Move</div>
+      <div class="control-item"><kbd>L</kbd> or <kbd>SPACE</kbd> (or Click) Shoot</div>
+      <div class="control-item"><kbd>A</kbd> Reload</div>
       <div class="control-item"><kbd>E</kbd> Interact / Shop</div>
       <div class="control-item"><kbd>G</kbd> Throw TNT</div>
       <div class="control-item"><kbd>F</kbd> Dead-Eye Slowdown</div>
@@ -182,9 +182,9 @@
 
         <div class="controls-summary">
           <div class="key-guide">
-            <div><span class="key-pill">WASD / Arrow Keys</span> Move Character (8 Directions)</div>
-            <div><span class="key-pill">SPACE BAR or L</span> Shoot Weapon</div>
-            <div><span class="key-pill">K (or R)</span> Reload Cylinder</div>
+            <div><span class="key-pill">Arrow Keys (or WSD)</span> Move Character (8 Directions)</div>
+            <div><span class="key-pill">L KEY or SPACE (or Click)</span> Shoot Weapon</div>
+            <div><span class="key-pill">A KEY</span> Reload Six-Shooter Cylinder</div>
             <div><span class="key-pill">E</span> Interact with NPCs, General Store & Doors</div>
             <div><span class="key-pill">G</span> Throw Dynamite (when purchased)</div>
             <div><span class="key-pill">F</span> Dead-Eye Grit (Slow-Motion)</div>
@@ -254,10 +254,10 @@
     </div>
   </div>
 
-  <!-- Scripts -->
-  <script src="js/audio.js"></script>
-  <script src="js/sprites.js"></script>
-  <script src="js/world.js"></script>
-  <script src="js/game.js"></script>
+  <!-- Scripts with cache busting query string -->
+  <script src="js/audio.js?v=4"></script>
+  <script src="js/sprites.js?v=4"></script>
+  <script src="js/world.js?v=4"></script>
+  <script src="js/game.js?v=4"></script>
 </body>
 </html>

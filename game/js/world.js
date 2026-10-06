@@ -42,7 +42,7 @@ class World {
           "Howdy, partner! You're looking for Black Jack Bart's stolen Spanish Chest, ain't ya?",
           "The outlaws fled through the eastern canyon gate and locked it tight behind 'em!",
           "Scorpions and desert snakes swarmed their old camp to the east. The Brass Key is lost out there. Find that key and unlock the canyon gate!",
-          "Aim sharp: Press [SPACE] or [L] to shoot, and [K] to reload your cylinder!",
+          "Aim sharp: Press [L] or [SPACE] (or Click) to shoot, and [A] to reload your cylinder!",
           "If you need more lead, tonic, or heavy rifles, Dusty Dan runs a Gunsmith Outpost far across the canyon to the northeast! Bring him the gold you find!"
         ]
       },
@@ -100,16 +100,16 @@ class World {
       ],
 
       enemies: [
-        // Slow gentle Scorpions placed comfortably far away
-        { x: 820, y: 340, type: 'scorpion', hp: 25, speed: 0.95 },
-        { x: 920, y: 860, type: 'scorpion', hp: 25, speed: 0.95 },
-        { x: 1360, y: 680, type: 'scorpion', hp: 25, speed: 0.95 },
-        // Rattlesnakes - slow speed
-        { x: 1080, y: 280, type: 'snake', hp: 30, speed: 1.1 },
-        { x: 1480, y: 840, type: 'snake', hp: 30, speed: 1.1 },
-        // Outlaw Scouts - slower fire rate and generous timing
-        { x: 1560, y: 580, type: 'bandit', hp: 45, speed: 1.1, shootCooldown: 260 },
-        { x: 1680, y: 280, type: 'bandit', hp: 50, speed: 1.1, shootCooldown: 260 }
+        // Easy, gentle slow Scorpions placed comfortably far away
+        { x: 820, y: 340, type: 'scorpion', hp: 20, speed: 0.45 },
+        { x: 920, y: 860, type: 'scorpion', hp: 20, speed: 0.45 },
+        { x: 1340, y: 680, type: 'scorpion', hp: 20, speed: 0.45 },
+        // Rattlesnakes - slow speed, safely positioned outside rock ridges
+        { x: 1080, y: 280, type: 'snake', hp: 25, speed: 0.5 },
+        { x: 1320, y: 860, type: 'snake', hp: 25, speed: 0.5 },
+        // Outlaw Scouts - slower movement and relaxed fire rate
+        { x: 1560, y: 580, type: 'bandit', hp: 40, speed: 0.55, shootCooldown: 320 },
+        { x: 1680, y: 280, type: 'bandit', hp: 40, speed: 0.55, shootCooldown: 320 }
       ],
 
       treasureChest: null // Found in Zone 3!
