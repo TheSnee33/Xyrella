@@ -7,9 +7,19 @@
       "node_modules",
       ".git",
       "*.js",
-      "!sw.js"
+      "!sw.js",
+      "!game/**",
+      "!wild-west/**"
     ],
     "rewrites": [
+      {
+        "source": "/game",
+        "destination": "/game/index.html"
+      },
+      {
+        "source": "/wild-west",
+        "destination": "/wild-west/index.html"
+      },
       {
         "source": "**",
         "destination": "/index.html"

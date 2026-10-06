@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Desperado's Gold: The Legend of Dead Man's Creek</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rye&family=Cinzel:wght@600;800&family=Playfair+Display:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="game-wrapper">
+    <!-- Top HUD Header -->
+    <header id="game-hud">
+      <div class="hud-left">
+        <div class="hud-card health-card">
+          <span class="hud-label">HEALTH</span>
+          <div class="health-bar-container">
+            <div id="health-bar" style="width: 100%;"></div>
+            <span id="health-text">100 / 100</span>
+          </div>
+        </div>
+        <div class="hud-card grit-card">
+          <span class="hud-label">DEAD-EYE GRIT</span>
+          <div class="grit-bar-container">
+            <div id="grit-bar" style="width: 0%;"></div>
+            <span id="grit-text">GRIT [F]</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hud-center">
+        <h1 class="hud-title">DESPERADO'S GOLD</h1>
+        <div class="level-indicator">
+          <span id="zone-name">Zone 1: Rattlesnake Gulch</span>
+        </div>
+      </div>
+
+      <div class="hud-right">
+        <div class="hud-card ammo-card">
+          <span class="hud-label">SIX-SHOOTER</span>
+          <div class="cylinder-display" id="cylinder-display">
+            <!-- 6 chambers rendered here -->
+          </div>
+          <span id="ammo-text">6 / 6 [R]</span>
+        </div>
+
+        <div class="hud-card score-card">
+          <div class="stat-row">
+            <span class="stat-icon">💰</span>
+            <span id="gold-count">0</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-icon">🗺️</span>
+            <span id="objective-counter">Key: 0/1</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Canvas Container -->
+    <div id="canvas-container">
+      <canvas id="gameCanvas" width="960" height="600"></canvas>
+
+      <!-- Dynamic In-Game Notification Banner -->
+      <div id="banner-notification" class="hidden"></div>
+
+      <!-- Dialogue / Clue Popup -->
+      <div id="dialogue-box" class="hidden">
+        <div class="dialogue-portrait" id="dialogue-portrait">🤠</div>
+        <div class="dialogue-body">
+          <h4 id="dialogue-speaker">Old Pete</h4>
+          <p id="dialogue-text">Listen here, young buck! The Black Jack Gang hid the Spanish chest past the canyon...</p>
+          <div class="dialogue-prompt">Press [E] or Space to continue...</div>
+        </div>
+      </div>
+
+      <!-- Dead Eye Visual Overlay -->
+      <div id="deadeye-overlay" class="hidden"></div>
+    </div>
+
+    <!-- Controls & Help Footer -->
+    <footer id="game-controls-bar">
+      <div class="control-item"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or <kbd>Arrows</kbd> Move</div>
+      <div class="control-item"><kbd>SPACE</kbd> Shoot Revolver</div>
+      <div class="control-item"><kbd>R</kbd> Reload Cylinder</div>
+      <div class="control-item"><kbd>E</kbd> Interact / Examine</div>
+      <div class="control-item"><kbd>F</kbd> Dead-Eye Slowdown</div>
+      <div class="control-item"><kbd>M</kbd> Mute Audio</div>
+      <div class="control-item control-btn" id="btn-sound-toggle">🔊 Sound: ON</div>
+    </footer>
+
+    <!-- Overlay Screens -->
+    <!-- Start Screen -->
+    <div id="screen-start" class="overlay-screen active">
+      <div class="parchment-modal">
+        <div class="wanted-header">WANTED: DEAD OR ALIVE</div>
+        <h1 class="main-title">DESPERADO'S GOLD</h1>
+        <h3 class="sub-title">The Legend of Dead Man's Creek</h3>
+        
+        <div class="story-scroll">
+          <p>The year is 1881 in the scorching Arizona Badlands. Legend speaks of the <strong>Lost Spanish Treasure Chest</strong>, overflowing with royal doubloons and Aztec rubies, stolen by <strong>Black Jack Bart</strong> and buried deep inside Dead Man's Creek.</p>
+          <p>You play as <strong>Colt "Quickdraw" Cassidy</strong>. Armed only with your trusty six-shooter, you must track down the clues, fight through scorpions, rattlesnakes, and ruthless outlaws, and uncover the fabled chest.</p>
+        </div>
+
+        <div class="controls-summary">
+          <div class="key-guide">
+            <div><span class="key-pill">WASD / Arrow Keys</span> Move Cassidy (8 Directions)</div>
+            <div><span class="key-pill">SPACE BAR</span> Shoot Six-Shooter</div>
+            <div><span class="key-pill">R</span> Quick Reload</div>
+            <div><span class="key-pill">E</span> Interact with NPCs, Clues & Doors</div>
+            <div><span class="key-pill">F</span> Dead-Eye Grit (Slows time when charged!)</div>
+          </div>
+        </div>
+
+        <button id="btn-start-game" class="western-button pulse">MOUNT UP & RIDE (START)</button>
+        <p class="audio-hint">💡 Sound effects and western soundtrack synthesized via Web Audio!</p>
+      </div>
+    </div>
+
+    <!-- Level Complete Screen -->
+    <div id="screen-level-complete" class="overlay-screen hidden">
+      <div class="parchment-modal">
+        <h2 class="modal-title">TRAIL ADVANCED!</h2>
+        <div class="stamp-icon">★ PASSED ★</div>
+        <p id="level-summary-text">You survived Rattlesnake Gulch and unlocked the canyon gates!</p>
+        <div class="level-stats">
+          <div>Bandits Defeated: <span id="stat-bandits">0</span></div>
+          <div>Gold Stashed: <span id="stat-gold">$0</span></div>
+          <div>Accuracy: <span id="stat-accuracy">100%</span></div>
+        </div>
+        <button id="btn-next-level" class="western-button">VENTURE DEEPER</button>
+      </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="screen-game-over" class="overlay-screen hidden">
+      <div class="parchment-modal skull-theme">
+        <h2 class="modal-title death-title">BURIED IN BOOT HILL</h2>
+        <div class="stamp-icon skull-stamp">☠️ DEAD ☠️</div>
+        <p id="game-over-cause">The Arizona desert claimed another soul...</p>
+        <p>Dust to dust, cowboy. Your revolver fell silent before you could find the gold.</p>
+        <button id="btn-retry" class="western-button">TRY YOUR LUCK AGAIN</button>
+      </div>
+    </div>
+
+    <!-- Victory Screen (Treasure Chest Found!) -->
+    <div id="screen-victory" class="overlay-screen hidden">
+      <div class="parchment-modal victory-theme">
+        <div class="chest-banner">🏆 LEGENDARY DISCOVERY 🏆</div>
+        <h1 class="modal-title victory-title">THE EL DORADO CHEST IS YOURS!</h1>
+        <div class="chest-illustration">👑 💰 💎 🗝️ 💰 👑</div>
+        <p class="victory-p">You bested Black Jack Bart, braved the perils of Dead Man's Creek, and cracked open the Lost Spanish Treasure Chest! The desert will sing ballads of Colt Cassidy for generations to come!</p>
+        
+        <div class="final-stats-box">
+          <div class="final-stat-item">
+            <span class="fs-label">Total Gold Found:</span>
+            <span class="fs-val" id="final-gold">$5,400</span>
+          </div>
+          <div class="final-stat-item">
+            <span class="fs-label">Outlaws & Beasts Cleared:</span>
+            <span class="fs-val" id="final-kills">28</span>
+          </div>
+          <div class="final-stat-item">
+            <span class="fs-label">Trail Completion Time:</span>
+            <span class="fs-val" id="final-time">2m 45s</span>
+          </div>
+          <div class="final-stat-item">
+            <span class="fs-label">Gunslinger Rank:</span>
+            <span class="fs-val highlight" id="final-rank">Sheriff of the West</span>
+          </div>
+        </div>
+
+        <button id="btn-play-again" class="western-button pulse">RIDE OFF INTO THE SUNSET (PLAY AGAIN)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/audio.js"></script>
+  <script src="js/sprites.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
