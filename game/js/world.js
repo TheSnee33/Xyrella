@@ -39,14 +39,23 @@ class World {
         name: 'Old Pete',
         portrait: '🤠',
         dialogue: [
-          "Howdy, Colt! You're looking for Black Jack Bart's stolen Spanish Chest, ain't ya?",
+          "Howdy, partner! You're looking for Black Jack Bart's stolen Spanish Chest, ain't ya?",
           "The outlaws fled through the eastern canyon gate and locked it tight behind 'em!",
           "Scorpions and desert snakes swarmed their old camp to the east. The Brass Key is lost out there. Find that key and unlock the canyon gate!",
-          "Watch your ammo, Cassidy! Press [R] to reload, and use [F] for Dead-Eye focus if you get surrounded!"
+          "Aim sharp: Press [SPACE] or [L] to shoot, and [K] to reload your cylinder!",
+          "If you need more lead, tonic, or heavy rifles, Dusty Dan runs a Gunsmith Outpost far across the canyon to the northeast! Bring him the gold you find!"
         ]
       },
 
-      buildings: [],
+      shopkeeper: {
+        x: 1275,
+        y: 290,
+        name: 'Dusty Dan'
+      },
+
+      buildings: [
+        { x: 1180, y: 150, width: 190, height: 130, type: 'shop' }
+      ],
 
       obstacles: [
         // Northern canyon wall
@@ -122,6 +131,11 @@ class World {
       objectiveText: 'Assemble 3 Lost Map Fragments (0/3)',
 
       npc: null,
+      shopkeeper: {
+        x: 1150,
+        y: 840,
+        name: 'Miss Clara'
+      },
 
       buildings: [
         // Main Street Saloon
@@ -133,7 +147,7 @@ class World {
 
         // South side buildings
         { x: 480, y: 880, width: 200, height: 150, type: 'saloon' },
-        { x: 1040, y: 880, width: 220, height: 150, type: 'bank' },
+        { x: 1040, y: 880, width: 220, height: 150, type: 'shop' },
         { x: 1580, y: 880, width: 200, height: 150, type: 'mine' }
       ],
 

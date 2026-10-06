@@ -39,17 +39,21 @@
 
       <div class="hud-right">
         <div class="hud-card ammo-card">
-          <span class="hud-label">SIX-SHOOTER</span>
+          <span class="hud-label" id="weapon-label">SIX-SHOOTER</span>
           <div class="cylinder-display" id="cylinder-display">
             <!-- 6 chambers rendered here -->
           </div>
-          <span id="ammo-text">6 / 6 [R]</span>
+          <span id="ammo-text">6 / 6 [K]</span>
         </div>
 
         <div class="hud-card score-card">
           <div class="stat-row">
             <span class="stat-icon">💰</span>
             <span id="gold-count">0</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-icon">🧨</span>
+            <span id="tnt-count">0</span>
           </div>
           <div class="stat-row">
             <span class="stat-icon">🗺️</span>
@@ -71,8 +75,62 @@
         <div class="dialogue-portrait" id="dialogue-portrait">🤠</div>
         <div class="dialogue-body">
           <h4 id="dialogue-speaker">Old Pete</h4>
-          <p id="dialogue-text">Listen here, young buck! The Black Jack Gang hid the Spanish chest past the canyon...</p>
-          <div class="dialogue-prompt">Press [E] or Space to continue...</div>
+          <p id="dialogue-text">Listen here! The Black Jack Gang hid the Spanish chest past the canyon...</p>
+          <div class="dialogue-prompt">Press [E], Space or L to continue...</div>
+        </div>
+      </div>
+
+      <!-- Outpost General Store / Gunsmith Modal -->
+      <div id="shop-modal" class="hidden">
+        <div class="shop-inner">
+          <div class="shop-header">
+            <div class="shop-title">🏪 DUSTY'S OUTPOST & GUNSMITH</div>
+            <button id="shop-close-btn" class="shop-close-btn">&times;</button>
+          </div>
+          <p class="shop-tagline">"Finest lead, tonics, and hardware west of the Pecos!"</p>
+          <div class="shop-gold-badge">Your Gold: <span id="shop-gold-display">$0</span></div>
+
+          <div class="shop-items-grid">
+            <div class="shop-item-card">
+              <div class="shop-item-icon">📦</div>
+              <div class="shop-item-name">Cylinder Ammo</div>
+              <div class="shop-item-desc">Refills cylinder cartridges</div>
+              <div class="shop-item-price">$25</div>
+              <button class="shop-buy-btn" data-item="ammo">BUY</button>
+            </div>
+
+            <div class="shop-item-card">
+              <div class="shop-item-icon">🧪</div>
+              <div class="shop-item-name">Doc's Tonic</div>
+              <div class="shop-item-desc">Restores +45 Health</div>
+              <div class="shop-item-price">$40</div>
+              <button class="shop-buy-btn" data-item="health">BUY</button>
+            </div>
+
+            <div class="shop-item-card" id="card-dual-revolvers">
+              <div class="shop-item-icon">🔫🔫</div>
+              <div class="shop-item-name">Dual Peacemakers</div>
+              <div class="shop-item-desc">Twin revolvers fire 2 bullets per shot</div>
+              <div class="shop-item-price">$220</div>
+              <button class="shop-buy-btn" data-item="dual_revolvers">BUY</button>
+            </div>
+
+            <div class="shop-item-card" id="card-buffalo-rifle">
+              <div class="shop-item-icon">🎯</div>
+              <div class="shop-item-name">Buffalo Rifle</div>
+              <div class="shop-item-desc">Heavy long-range sniper lead (85 dmg)</div>
+              <div class="shop-item-price">$380</div>
+              <button class="shop-buy-btn" data-item="buffalo_rifle">BUY</button>
+            </div>
+
+            <div class="shop-item-card">
+              <div class="shop-item-icon">🧨</div>
+              <div class="shop-item-name">Dynamite Stick</div>
+              <div class="shop-item-desc">Throws explosive TNT with [G]</div>
+              <div class="shop-item-price">$60</div>
+              <button class="shop-buy-btn" data-item="dynamite">BUY</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -83,9 +141,10 @@
     <!-- Controls & Help Footer -->
     <footer id="game-controls-bar">
       <div class="control-item"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or <kbd>Arrows</kbd> Move</div>
-      <div class="control-item"><kbd>SPACE</kbd> Shoot Revolver</div>
-      <div class="control-item"><kbd>R</kbd> Reload Cylinder</div>
-      <div class="control-item"><kbd>E</kbd> Interact / Examine</div>
+      <div class="control-item"><kbd>SPACE</kbd> or <kbd>L</kbd> Shoot</div>
+      <div class="control-item"><kbd>K</kbd> Reload</div>
+      <div class="control-item"><kbd>E</kbd> Interact / Shop</div>
+      <div class="control-item"><kbd>G</kbd> Throw TNT</div>
       <div class="control-item"><kbd>F</kbd> Dead-Eye Slowdown</div>
       <div class="control-item"><kbd>M</kbd> Mute Audio</div>
       <div class="control-item control-btn" id="btn-sound-toggle">🔊 Sound: ON</div>
@@ -101,21 +160,39 @@
         
         <div class="story-scroll">
           <p>The year is 1881 in the scorching Arizona Badlands. Legend speaks of the <strong>Lost Spanish Treasure Chest</strong>, overflowing with royal doubloons and Aztec rubies, stolen by <strong>Black Jack Bart</strong> and buried deep inside Dead Man's Creek.</p>
-          <p>You play as <strong>Colt "Quickdraw" Cassidy</strong>. Armed only with your trusty six-shooter, you must track down the clues, fight through scorpions, rattlesnakes, and ruthless outlaws, and uncover the fabled chest.</p>
+          <p>Armed only with your revolver, track down the clues, fight through beasts and outlaws, visit the remote <strong>Outpost Gunsmith</strong> across the canyon to upgrade your arsenal, and uncover the fabled chest!</p>
+        </div>
+
+        <!-- Character Selection -->
+        <div class="char-selection-container">
+          <div class="char-select-title">CHOOSE YOUR GUNSLINGER:</div>
+          <div class="char-cards-row">
+            <div class="char-card selected" id="opt-colt" data-gender="male">
+              <div class="char-card-avatar">🤠</div>
+              <div class="char-card-name">Colt Cassidy</div>
+              <div class="char-card-desc">The Desert Veteran<br>Classic Leather Duster</div>
+            </div>
+            <div class="char-card" id="opt-sadie" data-gender="female">
+              <div class="char-card-avatar">👩‍🌾</div>
+              <div class="char-card-name">Sadie Sinclair</div>
+              <div class="char-card-desc">The Badlands Huntress<br>Deadeye Outlaw Tracker</div>
+            </div>
+          </div>
         </div>
 
         <div class="controls-summary">
           <div class="key-guide">
-            <div><span class="key-pill">WASD / Arrow Keys</span> Move Cassidy (8 Directions)</div>
-            <div><span class="key-pill">SPACE BAR</span> Shoot Six-Shooter</div>
-            <div><span class="key-pill">R</span> Quick Reload</div>
-            <div><span class="key-pill">E</span> Interact with NPCs, Clues & Doors</div>
-            <div><span class="key-pill">F</span> Dead-Eye Grit (Slows time when charged!)</div>
+            <div><span class="key-pill">WASD / Arrow Keys</span> Move Character (8 Directions)</div>
+            <div><span class="key-pill">SPACE BAR or L</span> Shoot Weapon</div>
+            <div><span class="key-pill">K (or R)</span> Reload Cylinder</div>
+            <div><span class="key-pill">E</span> Interact with NPCs, General Store & Doors</div>
+            <div><span class="key-pill">G</span> Throw Dynamite (when purchased)</div>
+            <div><span class="key-pill">F</span> Dead-Eye Grit (Slow-Motion)</div>
           </div>
         </div>
 
         <button id="btn-start-game" class="western-button pulse">MOUNT UP & RIDE (START)</button>
-        <p class="audio-hint">💡 Sound effects and western soundtrack synthesized via Web Audio!</p>
+        <p class="audio-hint">💡 Sound effects, gunshots & western soundtrack synthesized via Web Audio!</p>
       </div>
     </div>
 
@@ -140,7 +217,7 @@
         <h2 class="modal-title death-title">BURIED IN BOOT HILL</h2>
         <div class="stamp-icon skull-stamp">☠️ DEAD ☠️</div>
         <p id="game-over-cause">The Arizona desert claimed another soul...</p>
-        <p>Dust to dust, cowboy. Your revolver fell silent before you could find the gold.</p>
+        <p>Dust to dust, gunslinger. Your revolver fell silent before you could find the gold.</p>
         <button id="btn-retry" class="western-button">TRY YOUR LUCK AGAIN</button>
       </div>
     </div>
@@ -151,7 +228,7 @@
         <div class="chest-banner">🏆 LEGENDARY DISCOVERY 🏆</div>
         <h1 class="modal-title victory-title">THE EL DORADO CHEST IS YOURS!</h1>
         <div class="chest-illustration">👑 💰 💎 🗝️ 💰 👑</div>
-        <p class="victory-p">You bested Black Jack Bart, braved the perils of Dead Man's Creek, and cracked open the Lost Spanish Treasure Chest! The desert will sing ballads of Colt Cassidy for generations to come!</p>
+        <p class="victory-p">You bested Black Jack Bart, braved the perils of Dead Man's Creek, and cracked open the Lost Spanish Treasure Chest! The desert will sing ballads of your courage for generations to come!</p>
         
         <div class="final-stats-box">
           <div class="final-stat-item">

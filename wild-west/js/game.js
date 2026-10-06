@@ -32,6 +32,8 @@ class Game {
       facingAngle: 0,
       lastMoveAngle: 0,
       isMoving: false,
+      gender: 'male', // 'male' (Colt Cassidy) or 'female' (Sadie Sinclair)
+      weaponType: 'revolver', // 'revolver', 'dual_revolvers', 'buffalo_rifle'
       hp: 100,
       maxHp: 100,
       ammo: 6,
@@ -50,10 +52,13 @@ class Game {
     // Inventory & Stats
     this.inventory = {
       gold: 0,
+      dynamites: 0,
       canyon_key: false,
       mapFragments: 0, // 0 to 3
       map_complete: false
     };
+
+    this.shopOpen = false;
 
     this.stats = {
       shotsFired: 0,
@@ -94,7 +99,9 @@ class Game {
       gritText: document.getElementById('grit-text'),
       cylinderDisplay: document.getElementById('cylinder-display'),
       ammoText: document.getElementById('ammo-text'),
+      weaponLabel: document.getElementById('weapon-label'),
       goldCount: document.getElementById('gold-count'),
+      tntCount: document.getElementById('tnt-count'),
       objectiveCounter: document.getElementById('objective-counter'),
       zoneName: document.getElementById('zone-name'),
       bannerNotification: document.getElementById('banner-notification'),
@@ -102,6 +109,9 @@ class Game {
       dialogueSpeaker: document.getElementById('dialogue-speaker'),
       dialogueText: document.getElementById('dialogue-text'),
       deadeyeOverlay: document.getElementById('deadeye-overlay'),
+      shopModal: document.getElementById('shop-modal'),
+      shopGoldDisplay: document.getElementById('shop-gold-display'),
+      shopCloseBtn: document.getElementById('shop-close-btn'),
       screenStart: document.getElementById('screen-start'),
       screenLevelComplete: document.getElementById('screen-level-complete'),
       screenGameOver: document.getElementById('screen-game-over'),
@@ -118,6 +128,35 @@ class Game {
   initEventListeners() {
     window.addEventListener('keydown', (e) => this.handleKeyDown(e));
     window.addEventListener('keyup', (e) => this.handleKeyUp(e));
+
+    // Character Selection
+    const optColt = document.getElementById('opt-colt');
+    const optSadie = document.getElementById('opt-sadie');
+    if (optColt && optSadie) {
+      optColt.addEventListener('click', () => {
+        optColt.classList.add('selected');
+        optSadie.classList.remove('selected');
+        this.player.gender = 'male';
+      });
+      optSadie.addEventListener('click', () => {
+        optSadie.classList.add('selected');
+        optColt.classList.remove('selected');
+        this.player.gender = 'female';
+      });
+    }
+
+    // Shop Close Button
+    if (this.dom.shopCloseBtn) {
+      this.dom.shopCloseBtn.addEventListener('click', () => this.closeShop());
+    }
+
+    // Shop Item Purchase Buttons
+    document.querySelectorAll('.shop-buy-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const itemKey = e.target.getAttribute('data-item');
+        this.buyShopItem(itemKey);
+      });
+    });
 
     // Start Screen Button
     document.getElementById('btn-start-game').addEventListener('click', () => {
@@ -149,9 +188,11 @@ class Game {
     document.getElementById('btn-play-again').addEventListener('click', () => {
       this.dom.screenVictory.classList.add('hidden');
       this.inventory.gold = 0;
+      this.inventory.dynamites = 0;
       this.inventory.canyon_key = false;
       this.inventory.mapFragments = 0;
       this.inventory.map_complete = false;
+      this.player.weaponType = 'revolver';
       this.stats.banditsKilled = 0;
       this.stats.shotsFired = 0;
       this.stats.shotsHit = 0;
@@ -189,7 +230,18 @@ class Game {
         }
       }
     }
-    this.dom.ammoText.innerText = this.player.isReloading ? 'RELOADING...' : `${this.player.ammo} / 6 [R]`;
+    this.dom.ammoText.innerText = this.player.isReloading ? 'RELOADING...' : `${this.player.ammo} / 6 [K]`;
+
+    if (this.dom.weaponLabel) {
+      let lbl = 'SIX-SHOOTER';
+      if (this.player.weaponType === 'dual_revolvers') lbl = 'DUAL PEACEMAKERS';
+      else if (this.player.weaponType === 'buffalo_rifle') lbl = 'BUFFALO RIFLE';
+      this.dom.weaponLabel.innerText = lbl;
+    }
+
+    if (this.dom.tntCount) {
+      this.dom.tntCount.innerText = this.inventory.dynamites;
+    }
   }
 
   loadZone(zoneIndex) {
@@ -251,40 +303,55 @@ class Game {
 
     // Advance Dialogue
     if (this.dialogueActive) {
-      if (e.code === 'KeyE' || e.code === 'Space' || e.code === 'Enter') {
+      if (e.code === 'KeyE' || e.code === 'Space' || e.code === 'KeyL' || e.code === 'Enter') {
         e.preventDefault();
         this.advanceDialogue();
         return;
       }
     }
 
-    if (this.state !== 'playing') return;
-
-    // Space Bar: Shoot Revolver
-    if (e.code === 'Space') {
-      e.preventDefault();
-      this.shootRevolver();
+    // Close Shop with Escape or E
+    if (this.shopOpen) {
+      if (e.code === 'Escape' || e.code === 'KeyE') {
+        e.preventDefault();
+        this.closeShop();
+        return;
+      }
     }
 
-    // R: Reload Revolver
-    if (e.code === 'KeyR') {
+    if (this.state !== 'playing') return;
+
+    // Shoot Weapon: Space Bar or L Key
+    if (e.code === 'Space' || e.code === 'KeyL') {
+      e.preventDefault();
+      this.shootWeapon();
+    }
+
+    // Reload Cylinder: K Key (or R)
+    if (e.code === 'KeyK' || e.code === 'KeyR') {
       e.preventDefault();
       this.reloadRevolver();
     }
 
-    // E: Interact
+    // Throw Dynamite: G Key
+    if (e.code === 'KeyG') {
+      e.preventDefault();
+      this.throwDynamite();
+    }
+
+    // Interact: E Key
     if (e.code === 'KeyE') {
       e.preventDefault();
       this.interact();
     }
 
-    // F: Dead-Eye Slow Motion
+    // Dead-Eye Slow Motion: F Key
     if (e.code === 'KeyF') {
       e.preventDefault();
       this.toggleDeadEye();
     }
 
-    // M: Mute toggle
+    // Mute toggle: M Key
     if (e.code === 'KeyM') {
       e.preventDefault();
       const active = window.soundEngine.toggleMute();
@@ -297,12 +364,12 @@ class Game {
   }
 
   // --- COMBAT & MECHANICS ---
-  shootRevolver() {
+  shootWeapon() {
     if (this.player.isReloading) return;
 
     if (this.player.ammo <= 0) {
       window.soundEngine.playEmptyClick();
-      this.showFloatingText(this.player.x, this.player.y - 25, '*CLICK* Reload [R]!', '#ff9800');
+      this.showFloatingText(this.player.x, this.player.y - 25, '*CLICK* Reload [K]!', '#ff9800');
       this.reloadRevolver(); // auto reload on empty click
       return;
     }
@@ -311,27 +378,60 @@ class Game {
     this.stats.shotsFired++;
     this.updateCylinderHUD();
 
-    window.soundEngine.playGunshot(true);
-
     this.player.isShooting = true;
     this.player.recoilTimer = 8;
     setTimeout(() => { this.player.isShooting = false; }, 90);
 
-    // Calculate bullet velocity
     const angle = this.player.facingAngle;
-    const speed = 14;
 
-    this.bullets.push({
-      x: this.player.x + Math.cos(angle) * 16,
-      y: this.player.y + Math.sin(angle) * 16,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      life: 60,
-      damage: 40
-    });
+    if (this.player.weaponType === 'buffalo_rifle') {
+      // High-Velocity Buffalo Rifle
+      window.soundEngine.playRifleShot();
+      const speed = 18;
+      this.bullets.push({
+        x: this.player.x + Math.cos(angle) * 22,
+        y: this.player.y + Math.sin(angle) * 22,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 75,
+        damage: 85
+      });
+      this.createSmokeParticles(this.player.x + Math.cos(angle) * 28, this.player.y + Math.sin(angle) * 28, 8);
+    } else if (this.player.weaponType === 'dual_revolvers') {
+      // Dual Peacemakers: Twin bullets in tight spread!
+      window.soundEngine.playGunshot(true);
+      const speed = 14;
+      [-0.08, 0.08].forEach(spread => {
+        const bAngle = angle + spread;
+        this.bullets.push({
+          x: this.player.x + Math.cos(bAngle) * 16,
+          y: this.player.y + Math.sin(bAngle) * 16,
+          vx: Math.cos(bAngle) * speed,
+          vy: Math.sin(bAngle) * speed,
+          life: 60,
+          damage: 35
+        });
+      });
+      this.createSmokeParticles(this.player.x + Math.cos(angle) * 20, this.player.y + Math.sin(angle) * 20, 6);
+    } else {
+      // Standard Six-Shooter Revolver
+      window.soundEngine.playGunshot(true);
+      const speed = 14;
+      this.bullets.push({
+        x: this.player.x + Math.cos(angle) * 16,
+        y: this.player.y + Math.sin(angle) * 16,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 60,
+        damage: 40
+      });
+      this.createSmokeParticles(this.player.x + Math.cos(angle) * 20, this.player.y + Math.sin(angle) * 20, 5);
+    }
+  }
 
-    // Muzzle smoke particle
-    this.createSmokeParticles(this.player.x + Math.cos(angle) * 20, this.player.y + Math.sin(angle) * 20, 5);
+  // Alias for legacy calls
+  shootRevolver() {
+    this.shootWeapon();
   }
 
   reloadRevolver() {
@@ -349,6 +449,29 @@ class Game {
     }, 700);
   }
 
+  throwDynamite() {
+    if (this.inventory.dynamites <= 0) {
+      this.showFloatingText(this.player.x, this.player.y - 25, 'No TNT! Buy at Outpost!', '#ff9800');
+      return;
+    }
+
+    this.inventory.dynamites--;
+    this.updateCylinderHUD();
+    const angle = this.player.facingAngle;
+    const throwSpeed = 6.5;
+
+    this.dynamites.push({
+      x: this.player.x,
+      y: this.player.y,
+      vx: Math.cos(angle) * throwSpeed,
+      vy: Math.sin(angle) * throwSpeed,
+      fuse: 65,
+      isPlayer: true
+    });
+
+    this.showFloatingText(this.player.x, this.player.y - 25, 'TNT THROWN!', '#ff5722');
+  }
+
   toggleDeadEye() {
     if (this.player.grit >= 40 && !this.player.deadEyeActive) {
       this.player.deadEyeActive = true;
@@ -359,7 +482,111 @@ class Game {
     }
   }
 
+  // --- GENERAL STORE / GUNSMITH SHOP ---
+  openShop() {
+    this.shopOpen = true;
+    if (this.dom.shopModal) {
+      this.dom.shopModal.classList.remove('hidden');
+      if (this.dom.shopGoldDisplay) {
+        this.dom.shopGoldDisplay.innerText = `$${this.inventory.gold}`;
+      }
+
+      const dualCard = document.getElementById('card-dual-revolvers');
+      if (dualCard) {
+        const btn = dualCard.querySelector('.shop-buy-btn');
+        if (this.player.weaponType === 'dual_revolvers') {
+          btn.innerText = 'EQUIPPED';
+          btn.disabled = true;
+        } else {
+          btn.innerText = 'BUY';
+          btn.disabled = false;
+        }
+      }
+
+      const rifleCard = document.getElementById('card-buffalo-rifle');
+      if (rifleCard) {
+        const btn = rifleCard.querySelector('.shop-buy-btn');
+        if (this.player.weaponType === 'buffalo_rifle') {
+          btn.innerText = 'EQUIPPED';
+          btn.disabled = true;
+        } else {
+          btn.innerText = 'BUY';
+          btn.disabled = false;
+        }
+      }
+    }
+  }
+
+  closeShop() {
+    this.shopOpen = false;
+    if (this.dom.shopModal) {
+      this.dom.shopModal.classList.add('hidden');
+    }
+  }
+
+  buyShopItem(itemKey) {
+    const prices = {
+      ammo: 25,
+      health: 40,
+      dual_revolvers: 220,
+      buffalo_rifle: 380,
+      dynamite: 60
+    };
+
+    const cost = prices[itemKey];
+    if (cost === undefined) return;
+
+    if (this.inventory.gold < cost) {
+      window.soundEngine.playEmptyClick();
+      this.showFloatingText(this.player.x, this.player.y - 25, 'Not enough gold, partner!', '#e74c3c');
+      return;
+    }
+
+    this.inventory.gold -= cost;
+    this.dom.goldCount.innerText = this.inventory.gold;
+    if (this.dom.shopGoldDisplay) this.dom.shopGoldDisplay.innerText = `$${this.inventory.gold}`;
+    window.soundEngine.playBuy();
+
+    if (itemKey === 'ammo') {
+      this.player.ammo = this.player.maxAmmo;
+      this.showFloatingText(this.player.x, this.player.y - 25, '+AMMO RESTOCKED', '#ffd700');
+    } else if (itemKey === 'health') {
+      this.player.hp = Math.min(this.player.maxHp, this.player.hp + 45);
+      this.dom.healthBar.style.width = `${(this.player.hp / this.player.maxHp) * 100}%`;
+      this.dom.healthText.innerText = `${this.player.hp} / ${this.player.maxHp}`;
+      this.showFloatingText(this.player.x, this.player.y - 25, '+45 HEALTH TONIC', '#2ecc71');
+    } else if (itemKey === 'dual_revolvers') {
+      this.player.weaponType = 'dual_revolvers';
+      this.showFloatingText(this.player.x, this.player.y - 25, 'DUAL PEACEMAKERS EQUIPPED!', '#ffd700');
+      this.openShop();
+    } else if (itemKey === 'buffalo_rifle') {
+      this.player.weaponType = 'buffalo_rifle';
+      this.showFloatingText(this.player.x, this.player.y - 25, 'BUFFALO RIFLE EQUIPPED!', '#ffd700');
+      this.openShop();
+    } else if (itemKey === 'dynamite') {
+      this.inventory.dynamites++;
+      this.showFloatingText(this.player.x, this.player.y - 25, '+1 TNT STICK [G]', '#ff5722');
+    }
+
+    this.updateCylinderHUD();
+  }
+
   interact() {
+    // If shop open, close it
+    if (this.shopOpen) {
+      this.closeShop();
+      return;
+    }
+
+    // Check Shopkeeper interaction
+    if (this.currentZone.shopkeeper) {
+      const dist = Math.hypot(this.player.x - this.currentZone.shopkeeper.x, this.player.y - this.currentZone.shopkeeper.y);
+      if (dist < 80) {
+        this.openShop();
+        return;
+      }
+    }
+
     // Check NPC interaction
     if (this.currentZone.npc) {
       const dist = Math.hypot(this.player.x - this.currentZone.npc.x, this.player.y - this.currentZone.npc.y);
@@ -1162,6 +1389,11 @@ class Game {
       Sprites.drawProspector(ctx, this.currentZone.npc.x, this.currentZone.npc.y, this.gameTime);
     }
 
+    // Shopkeeper NPC (Dusty Dan / Miss Clara)
+    if (this.currentZone.shopkeeper) {
+      Sprites.drawShopkeeper(ctx, this.currentZone.shopkeeper.x, this.currentZone.shopkeeper.y, this.gameTime);
+    }
+
     // Treasure Chest
     if (this.currentZone.treasureChest) {
       const tc = this.currentZone.treasureChest;
@@ -1214,7 +1446,7 @@ class Game {
       ctx.fill();
     });
 
-    // Colt Cassidy (Player)
+    // Player Character (Colt Cassidy or Sadie Sinclair)
     Sprites.drawPlayer(
       ctx,
       this.player.x,
@@ -1224,7 +1456,9 @@ class Game {
       this.player.isMoving,
       this.player.isShooting,
       this.player.recoilTimer,
-      this.player.invulnerableTimer > 0
+      this.player.invulnerableTimer > 0,
+      this.player.gender,
+      this.player.weaponType
     );
 
     // Particles

@@ -5,8 +5,8 @@
  */
 
 const Sprites = {
-  // --- PLAYER: COLT CASSIDY ---
-  drawPlayer(ctx, x, y, angle, animTime, isMoving, isShooting, recoilTime, invulnerable) {
+  // --- PLAYER: COLT CASSIDY OR SADIE SINCLAIR ---
+  drawPlayer(ctx, x, y, angle, animTime, isMoving, isShooting, recoilTime, invulnerable, gender = 'male', weaponType = 'revolver') {
     ctx.save();
     ctx.translate(x, y);
 
@@ -26,107 +26,220 @@ const Sprites = {
     const legOffset = isMoving ? Math.sin(animTime * 12) * 5 : 0;
 
     // Boots
-    ctx.fillStyle = '#3a2312'; // dark leather
+    ctx.fillStyle = gender === 'female' ? '#21130d' : '#3a2312'; // dark leather
     ctx.fillRect(-8, 12 + legOffset, 6, 7);
     ctx.fillRect(2, 12 - legOffset, 6, 7);
 
-    // Spurs (brass shine)
-    ctx.fillStyle = '#d4af37';
+    // Spurs (brass / silver shine)
+    ctx.fillStyle = gender === 'female' ? '#e0e0e0' : '#d4af37';
     ctx.fillRect(-9, 17 + legOffset, 2, 2);
     ctx.fillRect(7, 17 - legOffset, 2, 2);
 
-    // Pants (blue denim)
-    ctx.fillStyle = '#2c3e50';
+    // Pants (blue denim for Colt, dark riding pants for Sadie)
+    ctx.fillStyle = gender === 'female' ? '#1c2833' : '#2c3e50';
     ctx.fillRect(-7, 2 + walkBob, 6, 11);
     ctx.fillRect(1, 2 + walkBob, 6, 11);
 
     // Gun belt & Holster
     ctx.fillStyle = '#4a2c16';
     ctx.fillRect(-8, 1 + walkBob, 16, 3);
-    ctx.fillStyle = '#d4af37';
-    ctx.fillRect(-2, 1 + walkBob, 4, 3); // belt buckle
+    ctx.fillStyle = gender === 'female' ? '#48c9b0' : '#d4af37'; // turquoise or brass buckle
+    ctx.fillRect(-2, 1 + walkBob, 4, 3);
 
-    // Duster Coat & Torso
-    ctx.fillStyle = '#8b5a2b'; // tan leather coat
-    ctx.beginPath();
-    ctx.moveTo(-10, -10 + walkBob);
-    ctx.lineTo(10, -10 + walkBob);
-    ctx.lineTo(12, 10 + walkBob);
-    ctx.lineTo(-12, 10 + walkBob);
-    ctx.closePath();
-    ctx.fill();
+    if (gender === 'female') {
+      // SADIE SINCLAIR: Fitted Crimson/Teal frontier vest & fringed coat
+      ctx.fillStyle = '#78281f'; // deep rich crimson
+      ctx.beginPath();
+      ctx.moveTo(-9, -10 + walkBob);
+      ctx.lineTo(9, -10 + walkBob);
+      ctx.lineTo(10, 10 + walkBob);
+      ctx.lineTo(-10, 10 + walkBob);
+      ctx.closePath();
+      ctx.fill();
 
-    // Red Neck Bandana
-    ctx.fillStyle = '#b71c1c';
-    ctx.beginPath();
-    ctx.moveTo(-4, -10 + walkBob);
-    ctx.lineTo(4, -10 + walkBob);
-    ctx.lineTo(0, -4 + walkBob);
-    ctx.closePath();
-    ctx.fill();
+      // Fringe detail
+      ctx.strokeStyle = '#d4ac0d';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(-8, 9 + walkBob);
+      ctx.lineTo(8, 9 + walkBob);
+      ctx.stroke();
 
-    // Head
-    ctx.fillStyle = '#e0ac69'; // skin tone
-    ctx.beginPath();
-    ctx.arc(0, -14 + walkBob, 6, 0, Math.PI * 2);
-    ctx.fill();
+      // Turquoise Neck Scarf
+      ctx.fillStyle = '#16a085';
+      ctx.beginPath();
+      ctx.moveTo(-4, -10 + walkBob);
+      ctx.lineTo(4, -10 + walkBob);
+      ctx.lineTo(0, -4 + walkBob);
+      ctx.closePath();
+      ctx.fill();
 
-    // Cowboy Hat (Brim and Crown)
-    ctx.fillStyle = '#4a2c16';
-    // Brim
-    ctx.beginPath();
-    ctx.ellipse(0, -16 + walkBob, 13, 5, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Crown
-    ctx.beginPath();
-    ctx.moveTo(-7, -16 + walkBob);
-    ctx.lineTo(-5, -24 + walkBob);
-    ctx.lineTo(0, -22 + walkBob); // crease
-    ctx.lineTo(5, -24 + walkBob);
-    ctx.lineTo(7, -16 + walkBob);
-    ctx.closePath();
-    ctx.fill();
-    // Hat Band
-    ctx.fillStyle = '#d4af37';
-    ctx.fillRect(-6, -18 + walkBob, 12, 2);
+      // Long Chestnut/Auburn Braid flowing down side/back
+      const hairSway = isMoving ? Math.sin(animTime * 10) * 3 : 0;
+      ctx.fillStyle = '#6e2c00';
+      ctx.beginPath();
+      ctx.moveTo(-6, -14 + walkBob);
+      ctx.quadraticCurveTo(-12 + hairSway, -4 + walkBob, -10 + hairSway, 8 + walkBob);
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#6e2c00';
+      ctx.stroke();
+      // Braid ribbon tie
+      ctx.fillStyle = '#16a085';
+      ctx.fillRect(-12 + hairSway, 6 + walkBob, 3, 3);
+
+      // Head
+      ctx.fillStyle = '#f5cba7'; // soft desert tone
+      ctx.beginPath();
+      ctx.arc(0, -14 + walkBob, 5.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Cowgirl Hat (Rolled sides, teardrop crown)
+      ctx.fillStyle = '#2c1d11';
+      // Brim
+      ctx.beginPath();
+      ctx.ellipse(0, -16 + walkBob, 13, 4.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Crown
+      ctx.beginPath();
+      ctx.moveTo(-6, -16 + walkBob);
+      ctx.lineTo(-4, -23 + walkBob);
+      ctx.lineTo(0, -21 + walkBob);
+      ctx.lineTo(4, -23 + walkBob);
+      ctx.lineTo(6, -16 + walkBob);
+      ctx.closePath();
+      ctx.fill();
+      // Silver & Turquoise Hat Band
+      ctx.fillStyle = '#48c9b0';
+      ctx.fillRect(-5, -18 + walkBob, 10, 2);
+    } else {
+      // COLT CASSIDY: Tan Leather Duster Coat & Torso
+      ctx.fillStyle = '#8b5a2b';
+      ctx.beginPath();
+      ctx.moveTo(-10, -10 + walkBob);
+      ctx.lineTo(10, -10 + walkBob);
+      ctx.lineTo(12, 10 + walkBob);
+      ctx.lineTo(-12, 10 + walkBob);
+      ctx.closePath();
+      ctx.fill();
+
+      // Red Neck Bandana
+      ctx.fillStyle = '#b71c1c';
+      ctx.beginPath();
+      ctx.moveTo(-4, -10 + walkBob);
+      ctx.lineTo(4, -10 + walkBob);
+      ctx.lineTo(0, -4 + walkBob);
+      ctx.closePath();
+      ctx.fill();
+
+      // Head
+      ctx.fillStyle = '#e0ac69';
+      ctx.beginPath();
+      ctx.arc(0, -14 + walkBob, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Cowboy Hat
+      ctx.fillStyle = '#4a2c16';
+      ctx.beginPath();
+      ctx.ellipse(0, -16 + walkBob, 13, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-7, -16 + walkBob);
+      ctx.lineTo(-5, -24 + walkBob);
+      ctx.lineTo(0, -22 + walkBob);
+      ctx.lineTo(5, -24 + walkBob);
+      ctx.lineTo(7, -16 + walkBob);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#d4af37';
+      ctx.fillRect(-6, -18 + walkBob, 12, 2);
+    }
 
     // Gun Arm (rotates towards shooting/facing angle)
     ctx.save();
     ctx.translate(0, -6 + walkBob);
     ctx.rotate(angle);
 
-    // Arm
-    ctx.fillStyle = '#8b5a2b';
-    ctx.fillRect(0, -3, 14, 5);
-
-    // Revolver in hand
     const recoilOffset = recoilTime > 0 ? -4 : 0;
-    ctx.translate(14 + recoilOffset, 0);
 
-    // Revolver frame
-    ctx.fillStyle = '#333';
-    ctx.fillRect(0, -2, 10, 3);
-    // Cylinder
-    ctx.fillStyle = '#555';
-    ctx.fillRect(1, -3, 4, 5);
-    // Wood grip
-    ctx.fillStyle = '#7a3e1d';
-    ctx.fillRect(-2, 1, 4, 4);
+    if (weaponType === 'buffalo_rifle') {
+      // Heavy Long-Barrel Buffalo Rifle
+      ctx.fillStyle = gender === 'female' ? '#78281f' : '#8b5a2b';
+      ctx.fillRect(0, -3, 12, 5);
 
-    // Muzzle Flash
-    if (isShooting) {
-      ctx.fillStyle = '#ffeb3b';
-      ctx.beginPath();
-      ctx.arc(12, 0, 7, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.translate(12 + recoilOffset, 0);
+      // Long wooden rifle stock
+      ctx.fillStyle = '#5c2c16';
+      ctx.fillRect(-6, -1, 10, 4);
+      // Brass receiver
+      ctx.fillStyle = '#d4af37';
+      ctx.fillRect(4, -2, 6, 4);
+      // Blued steel long barrel
+      ctx.fillStyle = '#111';
+      ctx.fillRect(10, -2, 16, 2.5);
 
-      ctx.fillStyle = '#ff5722';
-      ctx.beginPath();
-      ctx.arc(14, 0, 4, 0, Math.PI * 2);
-      ctx.fill();
+      // Rifle Muzzle Flash
+      if (isShooting) {
+        ctx.fillStyle = '#ffeb3b';
+        ctx.beginPath();
+        ctx.arc(28, -1, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ff5722';
+        ctx.beginPath();
+        ctx.arc(31, -1, 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (weaponType === 'dual_revolvers') {
+      // Dual Peacemakers
+      ctx.fillStyle = gender === 'female' ? '#78281f' : '#8b5a2b';
+      ctx.fillRect(0, -5, 14, 4);
+      ctx.fillRect(0, 1, 14, 4);
+
+      ctx.translate(14 + recoilOffset, 0);
+      // Gun 1 (Top)
+      ctx.fillStyle = '#222';
+      ctx.fillRect(0, -5, 10, 3);
+      ctx.fillStyle = '#ffd700';
+      ctx.fillRect(1, -6, 4, 5); // gold cylinder
+      // Gun 2 (Bottom)
+      ctx.fillStyle = '#222';
+      ctx.fillRect(0, 1, 10, 3);
+      ctx.fillStyle = '#ffd700';
+      ctx.fillRect(1, 0, 4, 5); // gold cylinder
+
+      // Dual Muzzle Flash
+      if (isShooting) {
+        ctx.fillStyle = '#ffeb3b';
+        ctx.beginPath();
+        ctx.arc(12, -4, 6, 0, Math.PI * 2);
+        ctx.arc(12, 2, 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else {
+      // Standard Six-Shooter
+      ctx.fillStyle = gender === 'female' ? '#78281f' : '#8b5a2b';
+      ctx.fillRect(0, -3, 14, 5);
+
+      ctx.translate(14 + recoilOffset, 0);
+      ctx.fillStyle = '#333';
+      ctx.fillRect(0, -2, 10, 3);
+      ctx.fillStyle = '#555';
+      ctx.fillRect(1, -3, 4, 5);
+      ctx.fillStyle = '#7a3e1d';
+      ctx.fillRect(-2, 1, 4, 4);
+
+      if (isShooting) {
+        ctx.fillStyle = '#ffeb3b';
+        ctx.beginPath();
+        ctx.arc(12, 0, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ff5722';
+        ctx.beginPath();
+        ctx.arc(14, 0, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
-    ctx.restore();
 
+    ctx.restore();
     ctx.restore();
   },
 
@@ -675,7 +788,7 @@ const Sprites = {
     ctx.fillRect(0, height, width, 8);
 
     // Main Wood Wall
-    ctx.fillStyle = type === 'saloon' ? '#5d4037' : (type === 'sheriff' ? '#4e342e' : '#3e2723');
+    ctx.fillStyle = type === 'saloon' ? '#5d4037' : (type === 'sheriff' ? '#4e342e' : (type === 'shop' ? '#6d4c41' : '#3e2723'));
     ctx.fillRect(0, 0, width, height);
 
     // Wood horizontal planks
@@ -689,7 +802,7 @@ const Sprites = {
     }
 
     // False Western Facade / Roof Parapet
-    ctx.fillStyle = '#3e2723';
+    ctx.fillStyle = type === 'shop' ? '#4e342e' : '#3e2723';
     ctx.fillRect(-4, -14, width + 8, 14);
 
     // Decorative stepped pediment top
@@ -702,15 +815,19 @@ const Sprites = {
     ctx.fill();
 
     // Signboard
-    ctx.fillStyle = '#d7ccc8';
-    ctx.fillRect(width * 0.2, -8, width * 0.6, 16);
-    ctx.strokeStyle = '#5d4037';
-    ctx.strokeRect(width * 0.2, -8, width * 0.6, 16);
+    ctx.fillStyle = type === 'shop' ? '#fff8dc' : '#d7ccc8';
+    ctx.fillRect(width * 0.15, -8, width * 0.7, 16);
+    ctx.strokeStyle = type === 'shop' ? '#b8860b' : '#5d4037';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(width * 0.15, -8, width * 0.7, 16);
 
-    ctx.fillStyle = '#212121';
-    ctx.font = 'bold 11px serif';
+    ctx.fillStyle = type === 'shop' ? '#8b0000' : '#212121';
+    ctx.font = 'bold 10px serif';
     ctx.textAlign = 'center';
-    const title = type === 'saloon' ? 'SALOON' : (type === 'sheriff' ? 'SHERIFF' : 'GOLD MINE');
+    let title = 'GOLD MINE';
+    if (type === 'saloon') title = 'SALOON';
+    else if (type === 'sheriff') title = 'SHERIFF';
+    else if (type === 'shop') title = 'GENERAL STORE & GUNSMITH';
     ctx.fillText(title, width * 0.5, 4);
 
     // Doorway
@@ -727,6 +844,17 @@ const Sprites = {
       ctx.fillStyle = '#8d6e63';
       ctx.fillRect(doorX + 2, doorY + 8, 11, 20);
       ctx.fillRect(doorX + 15, doorY + 8, 11, 20);
+    } else if (type === 'shop') {
+      // Warm amber lantern hanging by door
+      ctx.fillStyle = '#ffd700';
+      ctx.beginPath();
+      ctx.arc(doorX - 10, doorY + 12, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#333';
+      ctx.beginPath();
+      ctx.moveTo(doorX - 10, doorY + 4);
+      ctx.lineTo(doorX - 10, doorY + 8);
+      ctx.stroke();
     }
 
     // Windows
@@ -746,6 +874,76 @@ const Sprites = {
         ctx.stroke();
       }
     });
+
+    ctx.restore();
+  },
+
+  // --- SHOPKEEPER NPC (Dusty Dan / Gunsmith) ---
+  drawShopkeeper(ctx, x, y, animTime) {
+    ctx.save();
+    ctx.translate(x, y);
+
+    // Shadow
+    ctx.beginPath();
+    ctx.ellipse(0, 18, 14, 6, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+    ctx.fill();
+
+    const idleBob = Math.sin(animTime * 3.5) * 1.5;
+
+    // Clothes (white shirt + brown leather merchant apron)
+    ctx.fillStyle = '#f5f5f5'; // shirt sleeves
+    ctx.fillRect(-8, -6 + idleBob, 16, 16);
+
+    ctx.fillStyle = '#5c3a21'; // leather apron
+    ctx.beginPath();
+    ctx.moveTo(-6, -4 + idleBob);
+    ctx.lineTo(6, -4 + idleBob);
+    ctx.lineTo(7, 14 + idleBob);
+    ctx.lineTo(-7, 14 + idleBob);
+    ctx.closePath();
+    ctx.fill();
+
+    // Dark pants
+    ctx.fillStyle = '#212121';
+    ctx.fillRect(-7, 14 + idleBob, 5, 8);
+    ctx.fillRect(2, 14 + idleBob, 5, 8);
+
+    // Head
+    ctx.fillStyle = '#e0ac69';
+    ctx.beginPath();
+    ctx.arc(0, -11 + idleBob, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Spectacles / Glasses
+    ctx.strokeStyle = '#d4af37';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(-2.5, -12 + idleBob, 2.5, 0, Math.PI * 2);
+    ctx.arc(2.5, -12 + idleBob, 2.5, 0, Math.PI * 2);
+    ctx.moveTo(0, -12 + idleBob);
+    ctx.lineTo(0, -11 + idleBob);
+    ctx.stroke();
+
+    // Graying hair & mustache
+    ctx.fillStyle = '#9e9e9e';
+    ctx.beginPath();
+    ctx.arc(0, -16 + idleBob, 6, Math.PI, 0);
+    ctx.fill();
+    ctx.fillRect(-4, -9 + idleBob, 8, 2.5); // handlebar mustache
+
+    // Green Visor / Cap
+    ctx.fillStyle = '#1b5e20';
+    ctx.beginPath();
+    ctx.ellipse(0, -15 + idleBob, 10, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Floating animated Prompt
+    const promptFloat = Math.sin(animTime * 4) * 3;
+    ctx.fillStyle = '#ffd700';
+    ctx.font = 'bold 11px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🏪 GUNSMITH [E]', 0, -28 + promptFloat);
 
     ctx.restore();
   },

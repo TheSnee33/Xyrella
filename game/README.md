@@ -25,10 +25,11 @@ Armed only with your trusty six-shooter revolver and a handful of cartridges, yo
 
 | Action | Key / Input | Description |
 | :--- | :--- | :--- |
-| **Move Cassidy** | <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> or <kbd>Arrow Keys</kbd> | 8-directional smooth movement with walking animation and dust particles |
-| **Shoot Revolver** | <kbd>SPACE BAR</kbd> | Fires a high-velocity revolver shot in the facing direction |
-| **Quick Reload** | <kbd>R</kbd> | Refills the 6-chamber cylinder (or auto-reloads when clicking on empty) |
-| **Interact / Talk** | <kbd>E</kbd> | Converse with Old Pete, read clues, open gates, and unlock chests |
+| **Move Character** | <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> or <kbd>Arrow Keys</kbd> | 8-directional smooth movement with walking animation and dust particles |
+| **Shoot Weapon** | <kbd>SPACE BAR</kbd> or <kbd>L</kbd> | Fires your equipped revolver, dual peacemakers, or buffalo rifle |
+| **Quick Reload** | <kbd>K</kbd> (or <kbd>R</kbd>) | Refills the 6-chamber cylinder (or auto-reloads when clicking on empty) |
+| **Interact / Shop** | <kbd>E</kbd> | Converse with Old Pete, trade at the Gunsmith Outpost, and open gates/chests |
+| **Throw Dynamite** | <kbd>G</kbd> | Hurls explosive TNT stick purchased from the Gunsmith Outpost |
 | **Dead-Eye Focus** | <kbd>F</kbd> | Slows down time by 65% when Grit gauge is filled, enabling rapid precision shots |
 | **Toggle Sound** | <kbd>M</kbd> | Mutes or unmutes sound effects and ambient western music |
 
@@ -36,7 +37,17 @@ Armed only with your trusty six-shooter revolver and a handful of cartridges, yo
 
 ## 🌟 Key Features
 
-### 1. Authentic Western Gunslinging Mechanics
+### 1. Dual Protagonists: Colt Cassidy & Sadie Sinclair
+- Choose between **Colt "Quickdraw" Cassidy** (veteran gunslinger with classic duster coat) and **Sadie "Deadeye" Sinclair** (badlands bounty huntress with braided hair and crimson fringed vest).
+
+### 2. Outpost Gunsmith & General Store
+- Hidden far across the canyon from where you begin, find **Dusty Dan's Outpost & Gunsmith**!
+- Trade your looted gold for:
+  - **Cylinder Ammo ($25)**: Full cartridge restock
+  - **Doc's Health Tonic ($40)**: Restores +45 HP
+  - **Dual Peacemaker Revolvers ($220)**: Fires twin bullets simultaneously in tight spread
+  - **Buffalo Rifle ($380)**: Long-range sniper rifle dealing massive 85 damage with custom audio
+  - **Dynamite Sticks ($60)**: Throwable explosives with area-of-effect blast radius (<kbd>G</kbd>)
 - **Six-Shooter Cylinder HUD**: Real-time rotating 6-chamber cylinder display showing live ammo status and reload cycles.
 - **Dead-Eye Grit System**: Landing hits on outlaws fills your Grit meter. Trigger Dead-Eye mode (`F`) to enter bullet-time slow-motion!
 - **Dynamic Ballistics & Ricochets**: Bullets spark off solid rock walls, splinter wooden barrels, and make ricochet pings.

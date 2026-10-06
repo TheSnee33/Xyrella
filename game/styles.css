@@ -618,3 +618,213 @@ kbd {
     height: 100%;
   }
 }
+/* Character Selection in Start Modal */
+.char-selection-container {
+  margin: 14px 0 16px;
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px dashed var(--parchment-border);
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.char-select-title {
+  font-family: var(--font-western);
+  font-size: 0.85rem;
+  color: var(--crimson);
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.char-cards-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.char-card {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.4);
+  border: 2px solid var(--parchment-border);
+  border-radius: 6px;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.char-card:hover {
+  background: rgba(255, 255, 255, 0.7);
+  transform: translateY(-2px);
+}
+
+.char-card.selected {
+  border-color: var(--gold);
+  background: rgba(255, 215, 0, 0.18);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
+}
+
+.char-card-avatar {
+  font-size: 2.2rem;
+  margin-bottom: 2px;
+}
+
+.char-card-name {
+  font-family: var(--font-western);
+  font-size: 0.95rem;
+  color: var(--text-dark);
+}
+
+.char-card-desc {
+  font-size: 0.75rem;
+  color: #6d4c2d;
+  line-height: 1.25;
+  margin-top: 2px;
+}
+
+/* General Store / Gunsmith Modal */
+#shop-modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 620px;
+  background: var(--parchment);
+  border: 5px double var(--wood-dark);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.85);
+  z-index: 30;
+  color: var(--text-dark);
+  animation: popIn 0.2s ease-out;
+}
+
+@keyframes popIn {
+  from { transform: translate(-50%, -46%) scale(0.95); opacity: 0; }
+  to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+.shop-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid var(--parchment-border);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.shop-title {
+  font-family: var(--font-western);
+  font-size: 1.25rem;
+  color: var(--crimson);
+  letter-spacing: 1px;
+}
+
+.shop-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.8rem;
+  color: var(--wood-dark);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.shop-close-btn:hover {
+  color: var(--crimson);
+}
+
+.shop-tagline {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: #7b4b27;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.shop-gold-badge {
+  text-align: center;
+  font-family: var(--font-western);
+  font-size: 1.1rem;
+  color: #8b5a00;
+  margin-bottom: 14px;
+}
+
+.shop-gold-badge span {
+  color: #27ae60;
+  font-weight: bold;
+}
+
+.shop-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.shop-item-card {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--parchment-border);
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.shop-item-card.purchased {
+  opacity: 0.6;
+  border-color: #27ae60;
+}
+
+.shop-item-icon {
+  font-size: 1.8rem;
+  margin-bottom: 4px;
+}
+
+.shop-item-name {
+  font-family: var(--font-western);
+  font-size: 0.85rem;
+  color: var(--wood-dark);
+}
+
+.shop-item-desc {
+  font-size: 0.72rem;
+  color: #6d4c2d;
+  margin: 4px 0 6px;
+  flex-grow: 1;
+}
+
+.shop-item-price {
+  font-family: var(--font-western);
+  font-size: 0.95rem;
+  color: var(--crimson);
+  margin-bottom: 6px;
+}
+
+.shop-buy-btn {
+  background: linear-gradient(180deg, var(--wood-light) 0%, var(--wood-dark) 100%);
+  color: var(--gold-glow);
+  border: 1px solid var(--gold);
+  border-radius: 3px;
+  font-family: var(--font-western);
+  font-size: 0.75rem;
+  padding: 5px 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.shop-buy-btn:hover {
+  background: linear-gradient(180deg, #965d32 0%, #3e2413 100%);
+  transform: translateY(-1px);
+}
+
+.shop-buy-btn:disabled {
+  background: #777;
+  border-color: #999;
+  color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
