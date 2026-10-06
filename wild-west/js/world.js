@@ -81,8 +81,9 @@ class World {
       ],
 
       barrels: [
-        { x: 300, y: 580, loot: 'ammo' },
-        { x: 320, y: 610, loot: 'coin' },
+        { x: 220, y: 520, loot: 'coin' }, // Target practice near start!
+        { x: 250, y: 550, loot: 'ammo' }, // Extra ammo right at start!
+        { x: 300, y: 640, loot: 'health' },
         { x: 720, y: 550, loot: 'health' },
         { x: 750, y: 580, loot: 'coin' },
         { x: 1260, y: 520, loot: 'coin' },
@@ -92,25 +93,23 @@ class World {
 
       pickups: [
         { x: 1680, y: 240, type: 'key', id: 'canyon_key', name: 'Canyon Brass Key' },
+        { x: 360, y: 580, type: 'coin', val: 50 },
         { x: 620, y: 200, type: 'coin', val: 50 },
         { x: 800, y: 980, type: 'coin', val: 50 },
         { x: 1300, y: 200, type: 'health' }
       ],
 
       enemies: [
-        // Scorpions
-        { x: 650, y: 320, type: 'scorpion', hp: 35, speed: 2.1 },
-        { x: 680, y: 850, type: 'scorpion', hp: 35, speed: 2.1 },
-        { x: 820, y: 600, type: 'scorpion', hp: 35, speed: 2.1 },
-        { x: 1250, y: 700, type: 'scorpion', hp: 35, speed: 2.1 },
-        // Rattlesnakes
-        { x: 860, y: 280, type: 'snake', hp: 45, speed: 2.4 },
-        { x: 1150, y: 460, type: 'snake', hp: 45, speed: 2.4 },
-        { x: 1500, y: 860, type: 'snake', hp: 45, speed: 2.4 },
-        // Outlaw Scouts
-        { x: 1180, y: 260, type: 'bandit', hp: 60, speed: 1.4, shootCooldown: 180 },
-        { x: 1560, y: 580, type: 'bandit', hp: 60, speed: 1.4, shootCooldown: 170 },
-        { x: 1650, y: 280, type: 'bandit', hp: 70, speed: 1.5, shootCooldown: 160 }
+        // Slow gentle Scorpions placed comfortably far away
+        { x: 820, y: 340, type: 'scorpion', hp: 25, speed: 0.95 },
+        { x: 920, y: 860, type: 'scorpion', hp: 25, speed: 0.95 },
+        { x: 1360, y: 680, type: 'scorpion', hp: 25, speed: 0.95 },
+        // Rattlesnakes - slow speed
+        { x: 1080, y: 280, type: 'snake', hp: 30, speed: 1.1 },
+        { x: 1480, y: 840, type: 'snake', hp: 30, speed: 1.1 },
+        // Outlaw Scouts - slower fire rate and generous timing
+        { x: 1560, y: 580, type: 'bandit', hp: 45, speed: 1.1, shootCooldown: 260 },
+        { x: 1680, y: 280, type: 'bandit', hp: 50, speed: 1.1, shootCooldown: 260 }
       ],
 
       treasureChest: null // Found in Zone 3!

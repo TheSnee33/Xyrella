@@ -51,7 +51,7 @@ class Game {
 
     // Inventory & Stats
     this.inventory = {
-      gold: 0,
+      gold: 75,
       dynamites: 0,
       canyon_key: false,
       mapFragments: 0, // 0 to 3
@@ -269,14 +269,15 @@ class Game {
     this.stats.zoneKills = 0;
     this.stats.zoneGold = 0;
 
+    this.dom.goldCount.innerText = this.inventory.gold;
     this.updateObjectiveUI();
-    this.showBanner(this.currentZone.name);
+    this.updateCylinderHUD();
+    if (this.canvas) this.canvas.focus();
 
-    // If Zone 1, trigger Old Pete's intro dialogue right away
-    if (zoneIndex === 0 && this.currentZone.npc) {
-      setTimeout(() => {
-        this.startDialogue(this.currentZone.npc.name, this.currentZone.npc.dialogue);
-      }, 500);
+    if (zoneIndex === 0) {
+      this.showBanner('★ Press [L] or [SPACE] to Shoot! Move with WASD / Arrows ★');
+    } else {
+      this.showBanner(this.currentZone.name);
     }
   }
 
@@ -303,7 +304,7 @@ class Game {
 
     // Advance Dialogue
     if (this.dialogueActive) {
-      if (e.code === 'KeyE' || e.code === 'Space' || e.code === 'KeyL' || e.code === 'Enter') {
+      if (e.code === 'KeyE' || e.code === 'Space' || e.code === 'KeyL' || e.key === 'l' || e.key === 'L' || e.code === 'Enter') {
         e.preventDefault();
         this.advanceDialogue();
         return;
@@ -321,41 +322,67 @@ class Game {
 
     if (this.state !== 'playing') return;
 
-    // Shoot Weapon: Space Bar or L Key
-    if (e.code === 'Space' || e.code === 'KeyL') {
+    // Shoot Weapon: L key (primary) or Space Bar
+    const isShootKey = (
+      e.code === 'KeyL' ||
+      e.key === 'l' ||
+      e.key === 'L' ||
+      e.keyCode === 76 ||
+      e.code === 'Space' ||
+      e.key === ' ' ||
+      e.keyCode === 32
+    );
+
+    if (isShootKey) {
       e.preventDefault();
       this.shootWeapon();
+      return;
     }
 
     // Reload Cylinder: K Key (or R)
-    if (e.code === 'KeyK' || e.code === 'KeyR') {
+    const isReloadKey = (
+      e.code === 'KeyK' ||
+      e.key === 'k' ||
+      e.key === 'K' ||
+      e.keyCode === 75 ||
+      e.code === 'KeyR' ||
+      e.key === 'r' ||
+      e.key === 'R'
+    );
+
+    if (isReloadKey) {
       e.preventDefault();
       this.reloadRevolver();
+      return;
     }
 
     // Throw Dynamite: G Key
-    if (e.code === 'KeyG') {
+    if (e.code === 'KeyG' || e.key === 'g' || e.key === 'G') {
       e.preventDefault();
       this.throwDynamite();
+      return;
     }
 
     // Interact: E Key
-    if (e.code === 'KeyE') {
+    if (e.code === 'KeyE' || e.key === 'e' || e.key === 'E') {
       e.preventDefault();
       this.interact();
+      return;
     }
 
     // Dead-Eye Slow Motion: F Key
-    if (e.code === 'KeyF') {
+    if (e.code === 'KeyF' || e.key === 'f' || e.key === 'F') {
       e.preventDefault();
       this.toggleDeadEye();
+      return;
     }
 
     // Mute toggle: M Key
-    if (e.code === 'KeyM') {
+    if (e.code === 'KeyM' || e.key === 'm' || e.key === 'M') {
       e.preventDefault();
       const active = window.soundEngine.toggleMute();
       document.getElementById('btn-sound-toggle').innerText = active ? '🔊 Sound: ON' : '🔈 Sound: OFF';
+      return;
     }
   }
 
@@ -975,26 +1002,31 @@ class Game {
       en.angle = angle;
 
       if (en.type === 'scorpion') {
-        if (dist < 320) {
+        const detectRange = this.currentZone.id === 1 ? 180 : 320;
+        if (dist < detectRange) {
           en.x += Math.cos(angle) * en.speed * timeScale;
           en.y += Math.sin(angle) * en.speed * timeScale;
           if (dist < 22 && this.player.invulnerableTimer <= 0) {
-            this.damagePlayer(15, 'Stung by a Desert Scorpion!');
+            const dmg = this.currentZone.id === 1 ? 8 : 15;
+            this.damagePlayer(dmg, 'Stung by a Desert Scorpion!');
           }
         }
       } else if (en.type === 'snake') {
-        if (dist < 300) {
+        const detectRange = this.currentZone.id === 1 ? 170 : 300;
+        if (dist < detectRange) {
           if (dist < 140 && Math.random() < 0.03) {
             window.soundEngine.playRattle();
           }
           en.x += Math.cos(angle) * en.speed * timeScale;
           en.y += Math.sin(angle) * en.speed * timeScale;
           if (dist < 22 && this.player.invulnerableTimer <= 0) {
-            this.damagePlayer(20, 'Bitten by a venomous Rattlesnake!');
+            const dmg = this.currentZone.id === 1 ? 10 : 20;
+            this.damagePlayer(dmg, 'Bitten by a venomous Rattlesnake!');
           }
         }
       } else if (en.type === 'bandit') {
-        if (dist < 420) {
+        const detectRange = this.currentZone.id === 1 ? 260 : 420;
+        if (dist < detectRange) {
           // Maintain tactical distance
           if (dist > 180) {
             en.x += Math.cos(angle) * en.speed * timeScale;
@@ -1006,15 +1038,16 @@ class Game {
 
           en.shootCooldown = (en.shootCooldown || 140) - timeScale;
           if (en.shootCooldown <= 0) {
-            en.shootCooldown = 130 + Math.random() * 50;
+            en.shootCooldown = this.currentZone.id === 1 ? (250 + Math.random() * 80) : (130 + Math.random() * 50);
             window.soundEngine.playGunshot(false);
-            const bSpeed = 7;
+            const bSpeed = this.currentZone.id === 1 ? 4.2 : 7;
+            const bDmg = this.currentZone.id === 1 ? 8 : 18;
             this.enemyBullets.push({
               x: en.x + Math.cos(angle) * 16,
               y: en.y + Math.sin(angle) * 16,
               vx: Math.cos(angle) * bSpeed,
               vy: Math.sin(angle) * bSpeed,
-              damage: 18,
+              damage: bDmg,
               life: 90
             });
           }
