@@ -33,7 +33,11 @@ class Game {
       lastMoveAngle: 0,
       isMoving: false,
       gender: 'male', // 'male' (Colt Cassidy) or 'female' (Sadie Sinclair)
-      weaponType: 'revolver', // 'revolver', 'dual_revolvers', 'buffalo_rifle'
+      weaponType: 'revolver', // 'revolver', 'shotgun', 'dual_revolvers', 'repeater', 'buffalo_rifle'
+      armor: 'none', // 'none', 'leather', 'steel', 'gold'
+      armorReduction: 0,
+      hasBoots: false,
+      hasBandolier: false,
       hp: 100,
       maxHp: 100,
       ammo: 6,
@@ -54,7 +58,10 @@ class Game {
       gold: 75,
       dynamites: 0,
       canyon_key: false,
-      mapFragments: 0, // 0 to 3
+      silver_key: false,
+      gold_key: false,
+      mine_key: false,
+      mapFragments: 0,
       map_complete: false
     };
 
@@ -157,6 +164,27 @@ class Game {
       this.dom.shopCloseBtn.addEventListener('click', () => this.closeShop());
     }
 
+    // Shop Tabs Switching
+    const tabWeapons = document.getElementById('tab-btn-weapons');
+    const tabArmor = document.getElementById('tab-btn-armor');
+    const gridWeapons = document.getElementById('grid-weapons');
+    const gridArmor = document.getElementById('grid-armor');
+
+    if (tabWeapons && tabArmor && gridWeapons && gridArmor) {
+      tabWeapons.addEventListener('click', () => {
+        tabWeapons.classList.add('active');
+        tabArmor.classList.remove('active');
+        gridWeapons.style.display = 'grid';
+        gridArmor.style.display = 'none';
+      });
+      tabArmor.addEventListener('click', () => {
+        tabArmor.classList.add('active');
+        tabWeapons.classList.remove('active');
+        gridArmor.style.display = 'grid';
+        gridWeapons.style.display = 'none';
+      });
+    }
+
     // Shop Item Purchase Buttons
     document.querySelectorAll('.shop-buy-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -194,12 +222,22 @@ class Game {
     // Play Again Button
     document.getElementById('btn-play-again').addEventListener('click', () => {
       this.dom.screenVictory.classList.add('hidden');
-      this.inventory.gold = 0;
+      this.inventory.gold = 75;
       this.inventory.dynamites = 0;
       this.inventory.canyon_key = false;
-      this.inventory.mapFragments = 0;
-      this.inventory.map_complete = false;
+      this.inventory.silver_key = false;
+      this.inventory.gold_key = false;
+      this.inventory.mine_key = false;
+      this.player.armor = 'none';
+      this.player.armorReduction = 0;
+      this.player.hasBoots = false;
+      this.player.hasBandolier = false;
+      this.player.maxAmmo = 6;
+      this.player.speed = 3.8;
+      this.player.maxHp = 100;
+      this.player.hp = 100;
       this.player.weaponType = 'revolver';
+      this.buildCylinderHUD();
       this.stats.banditsKilled = 0;
       this.stats.shotsFired = 0;
       this.stats.shotsHit = 0;
@@ -218,7 +256,8 @@ class Game {
 
   buildCylinderHUD() {
     this.dom.cylinderDisplay.innerHTML = '';
-    for (let i = 0; i < 6; i++) {
+    const maxA = this.player.maxAmmo || 6;
+    for (let i = 0; i < maxA; i++) {
       const chamber = document.createElement('div');
       chamber.className = 'bullet-chamber loaded';
       chamber.id = `chamber-${i}`;
@@ -227,7 +266,8 @@ class Game {
   }
 
   updateCylinderHUD() {
-    for (let i = 0; i < 6; i++) {
+    const maxA = this.player.maxAmmo || 6;
+    for (let i = 0; i < maxA; i++) {
       const chamber = document.getElementById(`chamber-${i}`);
       if (chamber) {
         if (i < this.player.ammo) {
@@ -237,11 +277,13 @@ class Game {
         }
       }
     }
-    this.dom.ammoText.innerText = this.player.isReloading ? 'RELOADING...' : `${this.player.ammo} / 6 [A]`;
+    this.dom.ammoText.innerText = this.player.isReloading ? 'RELOADING...' : `${this.player.ammo} / ${maxA} [K]`;
 
     if (this.dom.weaponLabel) {
       let lbl = 'SIX-SHOOTER';
-      if (this.player.weaponType === 'dual_revolvers') lbl = 'DUAL PEACEMAKERS';
+      if (this.player.weaponType === 'shotgun') lbl = 'SAWED-OFF SHOTGUN';
+      else if (this.player.weaponType === 'dual_revolvers') lbl = 'DUAL PEACEMAKERS';
+      else if (this.player.weaponType === 'repeater') lbl = 'WINCHESTER REPEATER';
       else if (this.player.weaponType === 'buffalo_rifle') lbl = 'BUFFALO RIFLE';
       this.dom.weaponLabel.innerText = lbl;
     }
@@ -344,15 +386,12 @@ class Game {
       return;
     }
 
-    // Reload Cylinder: A Key (primary), or K / R
+    // Reload Cylinder: K Key (primary), or R
     const isReloadKey = (
-      e.code === 'KeyA' ||
-      (e.key && e.key.toLowerCase() === 'a') ||
-      e.keyCode === 65 ||
-      e.which === 65 ||
       e.code === 'KeyK' ||
       (e.key && e.key.toLowerCase() === 'k') ||
       e.keyCode === 75 ||
+      e.which === 75 ||
       e.code === 'KeyR' ||
       (e.key && e.key.toLowerCase() === 'r') ||
       e.keyCode === 82
@@ -393,7 +432,7 @@ class Game {
       return;
     }
 
-    // Track movement keys
+    // Track movement keys (WASD and Arrows)
     this.keys[e.code] = true;
   }
 
@@ -407,7 +446,7 @@ class Game {
 
     if (this.player.ammo <= 0) {
       window.soundEngine.playEmptyClick();
-      this.showFloatingText(this.player.x, this.player.y - 25, '*CLICK* Press [A] to Reload!', '#ff9800');
+      this.showFloatingText(this.player.x, this.player.y - 25, '*CLICK* Press [K] to Reload!', '#ff9800');
       this.reloadRevolver(); // auto reload on empty click
       return;
     }
@@ -435,6 +474,35 @@ class Game {
         damage: 85
       });
       this.createSmokeParticles(this.player.x + Math.cos(angle) * 28, this.player.y + Math.sin(angle) * 28, 8);
+    } else if (this.player.weaponType === 'shotgun') {
+      // Sawed-Off Double-Barrel Shotgun: 3-pellet cone
+      window.soundEngine.playGunshot(true);
+      const speed = 13;
+      [-0.18, 0, 0.18].forEach(spread => {
+        const bAngle = angle + spread;
+        this.bullets.push({
+          x: this.player.x + Math.cos(bAngle) * 16,
+          y: this.player.y + Math.sin(bAngle) * 16,
+          vx: Math.cos(bAngle) * speed,
+          vy: Math.sin(bAngle) * speed,
+          life: 45,
+          damage: 35
+        });
+      });
+      this.createSmokeParticles(this.player.x + Math.cos(angle) * 24, this.player.y + Math.sin(angle) * 24, 9);
+    } else if (this.player.weaponType === 'repeater') {
+      // Winchester Repeater 1873: Rapid lever action
+      window.soundEngine.playRifleShot();
+      const speed = 16;
+      this.bullets.push({
+        x: this.player.x + Math.cos(angle) * 20,
+        y: this.player.y + Math.sin(angle) * 20,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 65,
+        damage: 50
+      });
+      this.createSmokeParticles(this.player.x + Math.cos(angle) * 22, this.player.y + Math.sin(angle) * 22, 6);
     } else if (this.player.weaponType === 'dual_revolvers') {
       // Dual Peacemakers: Twin bullets in tight spread!
       window.soundEngine.playGunshot(true);
@@ -524,8 +592,8 @@ class Game {
     }
   }
 
-  // --- GENERAL STORE / GUNSMITH SHOP ---
-  openShop() {
+  // --- GENERAL STORE & ARMORY SHOP ---
+  openShop(tab = 'weapons', shopName = null) {
     this.shopOpen = true;
     if (this.dom.shopModal) {
       this.dom.shopModal.classList.remove('hidden');
@@ -533,29 +601,64 @@ class Game {
         this.dom.shopGoldDisplay.innerText = `$${this.inventory.gold}`;
       }
 
-      const dualCard = document.getElementById('card-dual-revolvers');
-      if (dualCard) {
-        const btn = dualCard.querySelector('.shop-buy-btn');
-        if (this.player.weaponType === 'dual_revolvers') {
-          btn.innerText = 'EQUIPPED';
-          btn.disabled = true;
-        } else {
-          btn.innerText = 'BUY';
-          btn.disabled = false;
-        }
+      if (shopName) {
+        const titleEl = document.getElementById('shop-title-text');
+        if (titleEl) titleEl.innerText = `🏪 ${shopName.toUpperCase()}`;
       }
 
-      const rifleCard = document.getElementById('card-buffalo-rifle');
-      if (rifleCard) {
-        const btn = rifleCard.querySelector('.shop-buy-btn');
-        if (this.player.weaponType === 'buffalo_rifle') {
-          btn.innerText = 'EQUIPPED';
-          btn.disabled = true;
-        } else {
-          btn.innerText = 'BUY';
-          btn.disabled = false;
-        }
+      // Switch to the requested tab
+      const tabWeapons = document.getElementById('tab-btn-weapons');
+      const tabArmor = document.getElementById('tab-btn-armor');
+      const gridWeapons = document.getElementById('grid-weapons');
+      const gridArmor = document.getElementById('grid-armor');
+
+      if (tab === 'armor') {
+        if (tabArmor) tabArmor.classList.add('active');
+        if (tabWeapons) tabWeapons.classList.remove('active');
+        if (gridArmor) gridArmor.style.display = 'grid';
+        if (gridWeapons) gridWeapons.style.display = 'none';
+      } else {
+        if (tabWeapons) tabWeapons.classList.add('active');
+        if (tabArmor) tabArmor.classList.remove('active');
+        if (gridWeapons) gridWeapons.style.display = 'grid';
+        if (gridArmor) gridArmor.style.display = 'none';
       }
+
+      // Update Weapons cards button states
+      const updateWeaponBtn = (cardId, isEquipped) => {
+        const card = document.getElementById(cardId);
+        if (card) {
+          const btn = card.querySelector('.shop-buy-btn');
+          if (btn) {
+            btn.innerText = isEquipped ? 'EQUIPPED' : (cardId === 'card-revolver' ? 'EQUIP' : 'BUY');
+            btn.disabled = isEquipped;
+          }
+        }
+      };
+
+      updateWeaponBtn('card-revolver', this.player.weaponType === 'revolver');
+      updateWeaponBtn('card-shotgun', this.player.weaponType === 'shotgun');
+      updateWeaponBtn('card-dual-revolvers', this.player.weaponType === 'dual_revolvers');
+      updateWeaponBtn('card-repeater', this.player.weaponType === 'repeater');
+      updateWeaponBtn('card-buffalo-rifle', this.player.weaponType === 'buffalo_rifle');
+
+      // Update Armor cards button states
+      const updateArmorBtn = (cardId, isOwned) => {
+        const card = document.getElementById(cardId);
+        if (card) {
+          const btn = card.querySelector('.shop-buy-btn');
+          if (btn) {
+            btn.innerText = isOwned ? 'EQUIPPED' : 'BUY';
+            btn.disabled = isOwned;
+          }
+        }
+      };
+
+      updateArmorBtn('card-leather-armor', this.player.armor === 'leather' || this.player.armor === 'steel' || this.player.armor === 'gold');
+      updateArmorBtn('card-steel-armor', this.player.armor === 'steel' || this.player.armor === 'gold');
+      updateArmorBtn('card-gold-armor', this.player.armor === 'gold');
+      updateArmorBtn('card-boots', this.player.hasBoots);
+      updateArmorBtn('card-bandolier', this.player.hasBandolier);
     }
   }
 
@@ -568,11 +671,19 @@ class Game {
 
   buyShopItem(itemKey) {
     const prices = {
-      ammo: 25,
-      health: 40,
+      revolver: 0,
+      shotgun: 160,
       dual_revolvers: 220,
+      repeater: 300,
       buffalo_rifle: 380,
-      dynamite: 60
+      ammo: 25,
+      dynamite: 60,
+      leather_armor: 120,
+      steel_armor: 240,
+      gold_armor: 420,
+      boots: 140,
+      bandolier: 180,
+      health: 40
     };
 
     const cost = prices[itemKey];
@@ -593,21 +704,72 @@ class Game {
       this.player.ammo = this.player.maxAmmo;
       this.showFloatingText(this.player.x, this.player.y - 25, '+AMMO RESTOCKED', '#ffd700');
     } else if (itemKey === 'health') {
-      this.player.hp = Math.min(this.player.maxHp, this.player.hp + 45);
+      this.player.hp = Math.min(this.player.maxHp, this.player.hp + 50);
       this.dom.healthBar.style.width = `${(this.player.hp / this.player.maxHp) * 100}%`;
       this.dom.healthText.innerText = `${this.player.hp} / ${this.player.maxHp}`;
-      this.showFloatingText(this.player.x, this.player.y - 25, '+45 HEALTH TONIC', '#2ecc71');
+      this.showFloatingText(this.player.x, this.player.y - 25, '+50 HEALTH TONIC', '#2ecc71');
+    } else if (itemKey === 'revolver') {
+      this.player.weaponType = 'revolver';
+      this.showFloatingText(this.player.x, this.player.y - 25, 'SIX-SHOOTER EQUIPPED!', '#ffd700');
+      this.openShop('weapons');
+    } else if (itemKey === 'shotgun') {
+      this.player.weaponType = 'shotgun';
+      this.showFloatingText(this.player.x, this.player.y - 25, 'SAWED-OFF SHOTGUN EQUIPPED!', '#ffd700');
+      this.openShop('weapons');
     } else if (itemKey === 'dual_revolvers') {
       this.player.weaponType = 'dual_revolvers';
       this.showFloatingText(this.player.x, this.player.y - 25, 'DUAL PEACEMAKERS EQUIPPED!', '#ffd700');
-      this.openShop();
+      this.openShop('weapons');
+    } else if (itemKey === 'repeater') {
+      this.player.weaponType = 'repeater';
+      this.showFloatingText(this.player.x, this.player.y - 25, 'WINCHESTER REPEATER EQUIPPED!', '#ffd700');
+      this.openShop('weapons');
     } else if (itemKey === 'buffalo_rifle') {
       this.player.weaponType = 'buffalo_rifle';
       this.showFloatingText(this.player.x, this.player.y - 25, 'BUFFALO RIFLE EQUIPPED!', '#ffd700');
-      this.openShop();
+      this.openShop('weapons');
     } else if (itemKey === 'dynamite') {
       this.inventory.dynamites++;
       this.showFloatingText(this.player.x, this.player.y - 25, '+1 TNT STICK [G]', '#ff5722');
+    } else if (itemKey === 'leather_armor') {
+      this.player.armor = 'leather';
+      this.player.armorReduction = 0.15;
+      this.player.maxHp = Math.max(this.player.maxHp, 125);
+      this.player.hp = Math.min(this.player.maxHp, this.player.hp + 25);
+      this.dom.healthBar.style.width = `${(this.player.hp / this.player.maxHp) * 100}%`;
+      this.dom.healthText.innerText = `${this.player.hp} / ${this.player.maxHp}`;
+      this.showFloatingText(this.player.x, this.player.y - 25, 'LEATHER VEST! (15% REDUCTION)', '#3498db');
+      this.openShop('armor');
+    } else if (itemKey === 'steel_armor') {
+      this.player.armor = 'steel';
+      this.player.armorReduction = 0.30;
+      this.player.maxHp = Math.max(this.player.maxHp, 150);
+      this.player.hp = Math.min(this.player.maxHp, this.player.hp + 50);
+      this.dom.healthBar.style.width = `${(this.player.hp / this.player.maxHp) * 100}%`;
+      this.dom.healthText.innerText = `${this.player.hp} / ${this.player.maxHp}`;
+      this.showFloatingText(this.player.x, this.player.y - 25, 'STEEL MARSHAL PLATE! (30% REDUCTION)', '#3498db');
+      this.openShop('armor');
+    } else if (itemKey === 'gold_armor') {
+      this.player.armor = 'gold';
+      this.player.armorReduction = 0.45;
+      this.player.maxHp = Math.max(this.player.maxHp, 180);
+      this.player.hp = Math.min(this.player.maxHp, this.player.hp + 80);
+      this.dom.healthBar.style.width = `${(this.player.hp / this.player.maxHp) * 100}%`;
+      this.dom.healthText.innerText = `${this.player.hp} / ${this.player.maxHp}`;
+      this.showFloatingText(this.player.x, this.player.y - 25, 'GOLDEN CUIRASS! (45% REDUCTION)', '#ffd700');
+      this.openShop('armor');
+    } else if (itemKey === 'boots') {
+      this.player.hasBoots = true;
+      this.player.speed = 4.3;
+      this.showFloatingText(this.player.x, this.player.y - 25, 'SWIFT BOOTS! (+30% SPEED)', '#2ecc71');
+      this.openShop('armor');
+    } else if (itemKey === 'bandolier') {
+      this.player.hasBandolier = true;
+      this.player.maxAmmo = 10;
+      this.player.ammo = 10;
+      this.buildCylinderHUD();
+      this.showFloatingText(this.player.x, this.player.y - 25, 'BANDOLIER! (10 ROUND CYLINDER)', '#ffd700');
+      this.openShop('armor');
     }
 
     this.updateCylinderHUD();
@@ -620,11 +782,12 @@ class Game {
       return;
     }
 
-    // Check Shopkeeper interaction
-    if (this.currentZone.shopkeeper) {
-      const dist = Math.hypot(this.player.x - this.currentZone.shopkeeper.x, this.player.y - this.currentZone.shopkeeper.y);
+    // Check multiple shopkeepers or single shopkeeper
+    const shopkeepers = this.currentZone.shopkeepers || (this.currentZone.shopkeeper ? [this.currentZone.shopkeeper] : []);
+    for (const sk of shopkeepers) {
+      const dist = Math.hypot(this.player.x - sk.x, this.player.y - sk.y);
       if (dist < 80) {
-        this.openShop();
+        this.openShop(sk.shopTab || 'weapons', sk.name);
         return;
       }
     }
@@ -638,7 +801,7 @@ class Game {
       }
     }
 
-    // Check Treasure Chest interaction in Zone 3
+    // Check Treasure Chest interaction in Zone 5
     if (this.currentZone.treasureChest) {
       const chest = this.currentZone.treasureChest;
       const dist = Math.hypot(this.player.x - chest.x, this.player.y - chest.y);
@@ -662,18 +825,11 @@ class Game {
       const gate = this.currentZone.exitGate;
       const dist = Math.hypot(this.player.x - (gate.x + gate.width / 2), this.player.y - (gate.y + gate.height / 2));
       if (dist < 80) {
-        if (this.currentZone.id === 1) {
-          if (this.inventory.canyon_key) {
-            this.completeLevel();
-          } else {
-            this.showBanner('Gate Locked! Find the Canyon Key in the scorpion nest!');
-          }
-        } else if (this.currentZone.id === 2) {
-          if (this.inventory.map_complete) {
-            this.completeLevel();
-          } else {
-            this.showBanner(`Requires 3 Map Fragments! (Found: ${this.inventory.mapFragments}/3)`);
-          }
+        const keyReq = gate.requiredItem;
+        if (!keyReq || this.inventory[keyReq]) {
+          this.completeLevel();
+        } else {
+          this.showBanner(`Gate Locked! Find the Level Key to unlock Level ${this.world.currentZoneIndex + 2}!`);
         }
       }
     }
@@ -717,9 +873,11 @@ class Game {
     const acc = this.stats.shotsFired > 0 ? Math.round((this.stats.shotsHit / this.stats.shotsFired) * 100) : 100;
     document.getElementById('stat-accuracy').innerText = `${acc}%`;
 
-    const summaryText = this.currentZone.id === 1 
-      ? 'You unlocked the Canyon Gates and braved through Rattlesnake Gulch!' 
-      : 'You assembled the 3 Torn Map Fragments and located the secret entrance to El Dorado Cavern!';
+    const nextIdx = this.world.currentZoneIndex + 1;
+    const nextZone = this.world.zones[nextIdx];
+    const summaryText = nextZone 
+      ? `Level ${this.world.currentZoneIndex + 1} Cleared! You unlocked the trail gates to ${nextZone.name}! Equip new weapons & armor, and ride on!` 
+      : 'You breached the inner gates to El Dorado Cavern! Face Black Jack Bart and claim the lost treasure!';
     document.getElementById('level-summary-text').innerText = summaryText;
   }
 
@@ -769,11 +927,14 @@ class Game {
   }
 
   updateObjectiveUI() {
-    if (this.currentZone.id === 1) {
-      this.dom.objectiveCounter.innerText = this.inventory.canyon_key ? 'Gate: UNLOCKED' : 'Key: 0/1';
-    } else if (this.currentZone.id === 2) {
-      this.dom.objectiveCounter.innerText = `Map: ${this.inventory.mapFragments}/3`;
-    } else if (this.currentZone.id === 3) {
+    if (this.currentZone.exitGate) {
+      const keyReq = this.currentZone.exitGate.requiredItem;
+      if (!keyReq || this.inventory[keyReq]) {
+        this.dom.objectiveCounter.innerText = 'Gate: UNLOCKED [GO EAST]';
+      } else {
+        this.dom.objectiveCounter.innerText = `Key: 0/1 (Level ${this.world.currentZoneIndex + 1})`;
+      }
+    } else if (this.currentZone.treasureChest) {
       this.dom.objectiveCounter.innerText = 'Boss: Black Jack';
     }
   }
@@ -826,7 +987,7 @@ class Game {
       let dy = 0;
       if (this.keys['KeyW'] || this.keys['ArrowUp']) dy -= 1;
       if (this.keys['KeyS'] || this.keys['ArrowDown']) dy += 1;
-      if (this.keys['ArrowLeft'] || this.keys['KeyQ']) dx -= 1;
+      if (this.keys['KeyA'] || this.keys['ArrowLeft'] || this.keys['KeyQ']) dx -= 1;
       if (this.keys['KeyD'] || this.keys['ArrowRight']) dx += 1;
 
       if (dx !== 0 && dy !== 0) {
@@ -860,6 +1021,24 @@ class Game {
       // Keep inside bounds
       this.player.x = Math.max(30, Math.min(this.currentZone.width - 30, this.player.x));
       this.player.y = Math.max(30, Math.min(this.currentZone.height - 30, this.player.y));
+
+      // Automatic Level Gate Passage when stepping through unlocked gate
+      if (this.currentZone.exitGate) {
+        const g = this.currentZone.exitGate;
+        const gateCenterX = g.x + g.width / 2;
+        const gateCenterY = g.y + g.height / 2;
+        if (Math.hypot(this.player.x - gateCenterX, this.player.y - gateCenterY) < 60) {
+          if (!g.locked) {
+            this.completeLevel();
+            return;
+          } else {
+            if (!this.player.gateNoticeTimer || this.gameTime - this.player.gateNoticeTimer > 3.5) {
+              this.showBanner(`🔒 Canyon Gate Locked! Find the Level Key to unlock Level ${this.world.currentZoneIndex + 2}!`);
+              this.player.gateNoticeTimer = this.gameTime;
+            }
+          }
+        }
+      }
     }
 
     // Camera follow player smoothly
@@ -1158,11 +1337,18 @@ class Game {
   }
 
   damagePlayer(amount, customCause) {
-    this.player.hp = Math.max(0, this.player.hp - amount);
+    const armorReduction = this.player.armorReduction || 0;
+    const finalAmount = Math.max(1, Math.round(amount * (1 - armorReduction)));
+
+    this.player.hp = Math.max(0, this.player.hp - finalAmount);
     this.player.invulnerableTimer = 35; // invulnerability frames
     window.soundEngine.playPlayerHurt();
     this.createBloodSparks(this.player.x, this.player.y, 6);
-    this.showFloatingText(this.player.x, this.player.y - 20, `-${amount}`, '#c0392b');
+    if (armorReduction > 0) {
+      this.showFloatingText(this.player.x, this.player.y - 20, `-${finalAmount} (ARMOR -${Math.round(armorReduction * 100)}%)`, '#3498db');
+    } else {
+      this.showFloatingText(this.player.x, this.player.y - 20, `-${finalAmount}`, '#c0392b');
+    }
 
     // Update HUD
     this.dom.healthBar.style.width = `${(this.player.hp / this.player.maxHp) * 100}%`;
@@ -1214,10 +1400,14 @@ class Game {
       window.soundEngine.playCoin();
       this.showFloatingText(p.x, p.y, `+$${val}`, '#ffd700');
     } else if (p.type === 'key') {
-      this.inventory.canyon_key = true;
+      const keyId = p.id || 'canyon_key';
+      this.inventory[keyId] = true;
+      if (this.currentZone.exitGate) {
+        this.currentZone.exitGate.locked = false;
+      }
       window.soundEngine.playClueFound();
-      this.showBanner(`Obtained: ${p.name}!`);
-      this.showFloatingText(p.x, p.y, 'KEY ACQUIRED!', '#ffd700');
+      this.showBanner(`★ ${p.name || 'LEVEL KEY'} FOUND! Gate is UNLOCKED! Head East to Enter Level ${this.world.currentZoneIndex + 2}! ★`);
+      this.showFloatingText(p.x, p.y, 'GATE UNLOCKED! [HEAD EAST]', '#ffd700');
       this.updateObjectiveUI();
     } else if (p.type === 'map') {
       this.inventory.mapFragments++;
@@ -1437,11 +1627,9 @@ class Game {
     // Exit Gate
     if (this.currentZone.exitGate) {
       const g = this.currentZone.exitGate;
-      ctx.fillStyle = '#4e342e';
-      ctx.fillRect(g.x, g.y, g.width, g.height);
-      ctx.fillStyle = '#d4af37';
-      ctx.font = 'bold 12px serif';
-      ctx.fillText('EXIT GATE', g.x - 14, g.y - 10);
+      const isOpen = !g.locked;
+      const nextLevelText = `LEVEL ${this.world.currentZoneIndex + 2}`;
+      Sprites.drawExitGate(ctx, g, isOpen, this.gameTime, nextLevelText);
     }
 
     // Destructible Barrels
@@ -1464,10 +1652,17 @@ class Game {
       Sprites.drawProspector(ctx, this.currentZone.npc.x, this.currentZone.npc.y, this.gameTime);
     }
 
-    // Shopkeeper NPC (Dusty Dan / Miss Clara)
-    if (this.currentZone.shopkeeper) {
-      Sprites.drawShopkeeper(ctx, this.currentZone.shopkeeper.x, this.currentZone.shopkeeper.y, this.gameTime);
-    }
+    // Shopkeeper NPCs (Gunsmith, Blacksmith & Armory)
+    const shopkeepers = this.currentZone.shopkeepers || (this.currentZone.shopkeeper ? [this.currentZone.shopkeeper] : []);
+    shopkeepers.forEach(sk => {
+      Sprites.drawShopkeeper(ctx, sk.x, sk.y, this.gameTime);
+      ctx.fillStyle = '#ffeb3b';
+      ctx.font = 'bold 9px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(sk.name, sk.x, sk.y - 20);
+      ctx.fillStyle = '#ffd54f';
+      ctx.fillText('[E] TALK / SHOP', sk.x, sk.y - 10);
+    });
 
     // Treasure Chest
     if (this.currentZone.treasureChest) {

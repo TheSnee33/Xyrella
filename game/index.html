@@ -43,7 +43,7 @@
           <div class="cylinder-display" id="cylinder-display">
             <!-- 6 chambers rendered here -->
           </div>
-          <span id="ammo-text">6 / 6 [A]</span>
+          <span id="ammo-text">6 / 6 [K]</span>
         </div>
 
         <div class="hud-card score-card">
@@ -80,31 +80,39 @@
         </div>
       </div>
 
-      <!-- Outpost General Store / Gunsmith Modal -->
+      <!-- General Store / Gunsmith & Blacksmith Armory Shop Modal -->
       <div id="shop-modal" class="hidden">
+        <div class="shop-backdrop"></div>
         <div class="shop-inner">
           <div class="shop-header">
-            <div class="shop-title">🏪 DUSTY'S OUTPOST & GUNSMITH</div>
+            <div class="shop-title" id="shop-title-text">🏪 FRONTIER OUTPOST & GUNSMITH</div>
             <button id="shop-close-btn" class="shop-close-btn">&times;</button>
           </div>
-          <p class="shop-tagline">"Finest lead, tonics, and hardware west of the Pecos!"</p>
+          <p class="shop-tagline" id="shop-tagline-text">"Finest firearms, heavy iron plates & hardware in the Arizona territory!"</p>
           <div class="shop-gold-badge">Your Gold: <span id="shop-gold-display">$0</span></div>
 
-          <div class="shop-items-grid">
-            <div class="shop-item-card">
-              <div class="shop-item-icon">📦</div>
-              <div class="shop-item-name">Cylinder Ammo</div>
-              <div class="shop-item-desc">Refills cylinder cartridges</div>
-              <div class="shop-item-price">$25</div>
-              <button class="shop-buy-btn" data-item="ammo">BUY</button>
+          <!-- Shop Navigation Tabs -->
+          <div class="shop-tabs">
+            <button class="shop-tab-btn active" id="tab-btn-weapons" data-tab="weapons">🔫 WEAPONS & AMMO</button>
+            <button class="shop-tab-btn" id="tab-btn-armor" data-tab="armor">🛡️ ARMOR & GEAR</button>
+          </div>
+
+          <!-- Tab 1: Weapons & Ammo -->
+          <div class="shop-items-grid" id="grid-weapons">
+            <div class="shop-item-card" id="card-revolver">
+              <div class="shop-item-icon">🔫</div>
+              <div class="shop-item-name">Colt Six-Shooter</div>
+              <div class="shop-item-desc">Reliable service revolver (40 dmg)</div>
+              <div class="shop-item-price">STANDARD</div>
+              <button class="shop-buy-btn" data-item="revolver">EQUIP</button>
             </div>
 
-            <div class="shop-item-card">
-              <div class="shop-item-icon">🧪</div>
-              <div class="shop-item-name">Doc's Tonic</div>
-              <div class="shop-item-desc">Restores +45 Health</div>
-              <div class="shop-item-price">$40</div>
-              <button class="shop-buy-btn" data-item="health">BUY</button>
+            <div class="shop-item-card" id="card-shotgun">
+              <div class="shop-item-icon">💥</div>
+              <div class="shop-item-name">Sawed-Off Shotgun</div>
+              <div class="shop-item-desc">Double-barrel spread blast (3x35 dmg)</div>
+              <div class="shop-item-price">$160</div>
+              <button class="shop-buy-btn" data-item="shotgun">BUY</button>
             </div>
 
             <div class="shop-item-card" id="card-dual-revolvers">
@@ -115,12 +123,28 @@
               <button class="shop-buy-btn" data-item="dual_revolvers">BUY</button>
             </div>
 
+            <div class="shop-item-card" id="card-repeater">
+              <div class="shop-item-icon">⚡</div>
+              <div class="shop-item-name">Winchester Repeater</div>
+              <div class="shop-item-desc">Fast lever-action repeating rifle (50 dmg)</div>
+              <div class="shop-item-price">$300</div>
+              <button class="shop-buy-btn" data-item="repeater">BUY</button>
+            </div>
+
             <div class="shop-item-card" id="card-buffalo-rifle">
               <div class="shop-item-icon">🎯</div>
-              <div class="shop-item-name">Buffalo Rifle</div>
+              <div class="shop-item-name">Buffalo Hunter Rifle</div>
               <div class="shop-item-desc">Heavy long-range sniper lead (85 dmg)</div>
               <div class="shop-item-price">$380</div>
               <button class="shop-buy-btn" data-item="buffalo_rifle">BUY</button>
+            </div>
+
+            <div class="shop-item-card">
+              <div class="shop-item-icon">📦</div>
+              <div class="shop-item-name">Cylinder Ammo</div>
+              <div class="shop-item-desc">Refills your ammo cartridges</div>
+              <div class="shop-item-price">$25</div>
+              <button class="shop-buy-btn" data-item="ammo">BUY</button>
             </div>
 
             <div class="shop-item-card">
@@ -129,6 +153,57 @@
               <div class="shop-item-desc">Throws explosive TNT with [G]</div>
               <div class="shop-item-price">$60</div>
               <button class="shop-buy-btn" data-item="dynamite">BUY</button>
+            </div>
+          </div>
+
+          <!-- Tab 2: Armor & Survival Gear -->
+          <div class="shop-items-grid" id="grid-armor" style="display: none;">
+            <div class="shop-item-card" id="card-leather-armor">
+              <div class="shop-item-icon">🧥</div>
+              <div class="shop-item-name">Leather Duster Vest</div>
+              <div class="shop-item-desc">+25 Max HP & 15% Damage Reduction</div>
+              <div class="shop-item-price">$120</div>
+              <button class="shop-buy-btn" data-item="leather_armor">BUY</button>
+            </div>
+
+            <div class="shop-item-card" id="card-steel-armor">
+              <div class="shop-item-icon">🛡️</div>
+              <div class="shop-item-name">Steel Marshal Plate</div>
+              <div class="shop-item-desc">+50 Max HP & 30% Damage Reduction</div>
+              <div class="shop-item-price">$240</div>
+              <button class="shop-buy-btn" data-item="steel_armor">BUY</button>
+            </div>
+
+            <div class="shop-item-card" id="card-gold-armor">
+              <div class="shop-item-icon">✨</div>
+              <div class="shop-item-name">Golden Sheriff Cuirass</div>
+              <div class="shop-item-desc">+80 Max HP & 45% Damage Reduction</div>
+              <div class="shop-item-price">$420</div>
+              <button class="shop-buy-btn" data-item="gold_armor">BUY</button>
+            </div>
+
+            <div class="shop-item-card" id="card-boots">
+              <div class="shop-item-icon">👢</div>
+              <div class="shop-item-name">Rattlesnake Boots</div>
+              <div class="shop-item-desc">+30% Movement Speed boost</div>
+              <div class="shop-item-price">$140</div>
+              <button class="shop-buy-btn" data-item="boots">BUY</button>
+            </div>
+
+            <div class="shop-item-card" id="card-bandolier">
+              <div class="shop-item-icon">🎖️</div>
+              <div class="shop-item-name">Heavy Bandolier</div>
+              <div class="shop-item-desc">Expands ammo capacity to 10 rounds!</div>
+              <div class="shop-item-price">$180</div>
+              <button class="shop-buy-btn" data-item="bandolier">BUY</button>
+            </div>
+
+            <div class="shop-item-card">
+              <div class="shop-item-icon">🧪</div>
+              <div class="shop-item-name">Doc's Tonic</div>
+              <div class="shop-item-desc">Instantly restores +50 Health</div>
+              <div class="shop-item-price">$40</div>
+              <button class="shop-buy-btn" data-item="health">BUY</button>
             </div>
           </div>
         </div>
@@ -140,9 +215,9 @@
 
     <!-- Controls & Help Footer -->
     <footer id="game-controls-bar">
-      <div class="control-item"><kbd>Arrows</kbd> (or <kbd>W</kbd><kbd>S</kbd><kbd>D</kbd>) Move</div>
+      <div class="control-item"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> (or <kbd>Arrows</kbd>) Move</div>
       <div class="control-item"><kbd>L</kbd> or <kbd>SPACE</kbd> (or Click) Shoot</div>
-      <div class="control-item"><kbd>A</kbd> Reload</div>
+      <div class="control-item"><kbd>K</kbd> Reload</div>
       <div class="control-item"><kbd>E</kbd> Interact / Shop</div>
       <div class="control-item"><kbd>G</kbd> Throw TNT</div>
       <div class="control-item"><kbd>F</kbd> Dead-Eye Slowdown</div>
@@ -160,7 +235,7 @@
         
         <div class="story-scroll">
           <p>The year is 1881 in the scorching Arizona Badlands. Legend speaks of the <strong>Lost Spanish Treasure Chest</strong>, overflowing with royal doubloons and Aztec rubies, stolen by <strong>Black Jack Bart</strong> and buried deep inside Dead Man's Creek.</p>
-          <p>Armed only with your revolver, track down the clues, fight through beasts and outlaws, visit the remote <strong>Outpost Gunsmith</strong> across the canyon to upgrade your arsenal, and uncover the fabled chest!</p>
+          <p>Armed only with your revolver, track down the clues, fight through beasts and outlaws, visit the <strong>Gunsmith & Blacksmith Armory</strong> to upgrade weapons & armor, and find the keys unlocking all 5 levels to uncover the fabled chest!</p>
         </div>
 
         <!-- Character Selection -->
@@ -182,10 +257,10 @@
 
         <div class="controls-summary">
           <div class="key-guide">
-            <div><span class="key-pill">Arrow Keys (or WSD)</span> Move Character (8 Directions)</div>
+            <div><span class="key-pill">WASD / Arrow Keys</span> Move Character (W Forward, A Left, S Backward, D Right)</div>
             <div><span class="key-pill">L KEY or SPACE (or Click)</span> Shoot Weapon</div>
-            <div><span class="key-pill">A KEY</span> Reload Six-Shooter Cylinder</div>
-            <div><span class="key-pill">E</span> Interact with NPCs, General Store & Doors</div>
+            <div><span class="key-pill">K KEY</span> Reload Cylinder</div>
+            <div><span class="key-pill">E</span> Interact with NPCs, Gunsmith, Blacksmith & Doors</div>
             <div><span class="key-pill">G</span> Throw Dynamite (when purchased)</div>
             <div><span class="key-pill">F</span> Dead-Eye Grit (Slow-Motion)</div>
           </div>
@@ -255,9 +330,9 @@
   </div>
 
   <!-- Scripts with cache busting query string -->
-  <script src="js/audio.js?v=4"></script>
-  <script src="js/sprites.js?v=4"></script>
-  <script src="js/world.js?v=4"></script>
-  <script src="js/game.js?v=4"></script>
+  <script src="js/audio.js?v=5"></script>
+  <script src="js/sprites.js?v=5"></script>
+  <script src="js/world.js?v=5"></script>
+  <script src="js/game.js?v=5"></script>
 </body>
 </html>

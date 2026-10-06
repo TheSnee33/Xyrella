@@ -821,13 +821,15 @@ const Sprites = {
     ctx.lineWidth = 2;
     ctx.strokeRect(width * 0.15, -8, width * 0.7, 16);
 
-    ctx.fillStyle = type === 'shop' ? '#8b0000' : '#212121';
+    ctx.fillStyle = (type === 'shop' || type === 'armory') ? '#8b0000' : '#212121';
     ctx.font = 'bold 10px serif';
     ctx.textAlign = 'center';
     let title = 'GOLD MINE';
     if (type === 'saloon') title = 'SALOON';
     else if (type === 'sheriff') title = 'SHERIFF';
-    else if (type === 'shop') title = 'GENERAL STORE & GUNSMITH';
+    else if (type === 'shop' || type === 'gunsmith') title = 'GENERAL STORE & GUNSMITH';
+    else if (type === 'armory' || type === 'blacksmith') title = 'BLACKSMITH & ARMORY';
+    else if (type === 'bank') title = 'FRONTIER BANK';
     ctx.fillText(title, width * 0.5, 4);
 
     // Doorway
@@ -1000,6 +1002,95 @@ const Sprites = {
       ctx.fillRect(-4, -3, 2, 6);
       ctx.fillRect(-1, -3, 2, 6);
       ctx.fillRect(2, -3, 2, 6);
+    }
+
+    ctx.restore();
+  },
+
+  // --- EXIT GATE & LEVEL TRANSITION ARCHWAY ---
+  drawExitGate(ctx, g, isOpen, time, nextLevelText = 'NEXT LEVEL') {
+    ctx.save();
+    ctx.translate(g.x, g.y);
+
+    // Gate Posts (Heavy western log timbers)
+    ctx.fillStyle = '#4e342e';
+    ctx.fillRect(0, 0, 10, g.height);
+    ctx.fillRect(g.width - 10, 0, 10, g.height);
+
+    // Archway Header beam
+    ctx.fillStyle = '#3e2723';
+    ctx.fillRect(-6, -20, g.width + 12, 20);
+    ctx.strokeStyle = isOpen ? '#ffd700' : '#8d6e63';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-6, -20, g.width + 12, 20);
+
+    // Archway Header text
+    ctx.fillStyle = isOpen ? '#ffeb3b' : '#cfd8dc';
+    ctx.font = 'bold 9px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(isOpen ? 'CANYON PASSAGE' : 'LOCKED GATE', g.width / 2, -7);
+
+    if (isOpen) {
+      // Shimmering Golden Gateway Portal
+      const pulse = 0.5 + Math.sin(time * 5) * 0.35;
+      ctx.fillStyle = `rgba(255, 215, 0, ${0.25 + pulse * 0.25})`;
+      ctx.fillRect(10, 0, g.width - 20, g.height);
+
+      // Open wooden swing doors swung back
+      ctx.fillStyle = '#5d4037';
+      ctx.fillRect(2, 4, 8, g.height - 8);
+      ctx.fillRect(g.width - 10, 4, 8, g.height - 8);
+
+      // Floating Animated Guidance Banner
+      const bob = Math.sin(time * 6) * 4;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+      ctx.fillRect(g.width / 2 - 65, -46 + bob, 130, 20);
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 1.8;
+      ctx.strokeRect(g.width / 2 - 65, -46 + bob, 130, 20);
+
+      ctx.fillStyle = '#ffeb3b';
+      ctx.font = 'bold 10px serif';
+      ctx.fillText(`➔ STEP IN: ${nextLevelText} ➔`, g.width / 2, -32 + bob);
+
+      // Bright glowing lanterns on gateposts
+      [0, g.width - 10].forEach(lx => {
+        ctx.fillStyle = '#ffb300';
+        ctx.beginPath();
+        ctx.arc(lx + 5, -10, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255, 235, 59, 0.4)';
+        ctx.beginPath();
+        ctx.arc(lx + 5, -10, 14, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    } else {
+      // Closed Iron Portcullis Bars
+      ctx.fillStyle = '#263238';
+      for (let px = 14; px < g.width - 10; px += 10) {
+        ctx.fillRect(px, 4, 4, g.height - 8);
+      }
+      // Heavy Crossbar
+      ctx.fillStyle = '#455a64';
+      ctx.fillRect(6, g.height / 2 - 8, g.width - 12, 16);
+
+      // Brass Padlock
+      ctx.fillStyle = '#ffd700';
+      ctx.beginPath();
+      ctx.arc(g.width / 2, g.height / 2, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#212121';
+      ctx.fillRect(g.width / 2 - 2, g.height / 2, 4, 6);
+
+      // Locked hint sign
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.fillRect(g.width / 2 - 45, -42, 90, 18);
+      ctx.strokeStyle = '#e57373';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(g.width / 2 - 45, -42, 90, 18);
+      ctx.fillStyle = '#ff8a80';
+      ctx.font = 'bold 9px serif';
+      ctx.fillText('🔒 FIND KEY TO UNLOCK', g.width / 2, -30);
     }
 
     ctx.restore();

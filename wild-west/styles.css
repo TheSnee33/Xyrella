@@ -690,15 +690,48 @@ kbd {
   left: 50%;
   transform: translate(-50%, -50%);
   width: 90%;
-  max-width: 620px;
+  max-width: 660px;
+  max-height: 90vh;
+  overflow-y: auto;
   background: var(--parchment);
   border: 5px double var(--wood-dark);
   border-radius: 8px;
-  padding: 20px;
+  padding: 18px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.85);
   z-index: 30;
   color: var(--text-dark);
   animation: popIn 0.2s ease-out;
+}
+
+.shop-tabs {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.shop-tab-btn {
+  background: rgba(139, 69, 19, 0.15);
+  border: 2px solid var(--parchment-border);
+  padding: 7px 18px;
+  font-family: var(--font-western);
+  font-size: 0.85rem;
+  color: var(--wood-dark);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.shop-tab-btn:hover {
+  background: rgba(139, 69, 19, 0.3);
+  transform: translateY(-1px);
+}
+
+.shop-tab-btn.active {
+  background: var(--wood-dark);
+  color: var(--gold-glow);
+  border-color: var(--gold);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 @keyframes popIn {
